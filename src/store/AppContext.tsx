@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Achievement,
@@ -108,6 +108,41 @@ type PersistedState = Pick<
   | 'languageSelected'
 >;
 
+const toPersistedState = (state: AppState): PersistedState => ({
+  onboardingComplete: state.onboardingComplete,
+  selectedRole: state.selectedRole,
+  selectedAvatar: state.selectedAvatar,
+  userName: state.userName,
+  points: state.points,
+  earnedPoints: state.earnedPoints,
+  spentPoints: state.spentPoints,
+  history: state.history,
+  lastAction: state.lastAction,
+  rewardRequests: state.rewardRequests,
+  tasks: state.tasks,
+  completedTasks: state.completedTasks,
+  penalties: state.penalties,
+  sharedGoals: state.sharedGoals,
+  wishlist: state.wishlist,
+  coupleStreak: state.coupleStreak,
+  bestCoupleStreak: state.bestCoupleStreak,
+  lastActivityDate: state.lastActivityDate,
+  notificationPreferences: state.notificationPreferences,
+  gameHistory: state.gameHistory,
+  dailyQuestionAnswer: state.dailyQuestionAnswer,
+  questionAnsweredDays: state.questionAnsweredDays,
+  dailyRewardDate: state.dailyRewardDate,
+  dailyChallengeStreak: state.dailyChallengeStreak,
+  lastGameRewardDate: state.lastGameRewardDate,
+  ownedThemes: state.ownedThemes,
+  selectedPremiumTheme: state.selectedPremiumTheme,
+  ownedDecorations: state.ownedDecorations,
+  selectedDecoration: state.selectedDecoration,
+  supportHistory: state.supportHistory,
+  language: state.language,
+  languageSelected: state.languageSelected,
+});
+
 // If there was at least one shared action yesterday, the streak continues; otherwise it resets to 1.
 const registerActivity = (prev: AppState): Pick<AppState, 'coupleStreak' | 'bestCoupleStreak' | 'lastActivityDate'> => {
   const today = todayKey();
@@ -127,6 +162,12 @@ const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, setState] = useState<AppState>(initialState);
+  // Latest committed state, so an async action can persist a snapshot without
+  // waiting for the persist effect below to run.
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     (async () => {
@@ -149,41 +190,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!state.isReady) return;
-    const toPersist: PersistedState = {
-      onboardingComplete: state.onboardingComplete,
-      selectedRole: state.selectedRole,
-      selectedAvatar: state.selectedAvatar,
-      userName: state.userName,
-      points: state.points,
-      earnedPoints: state.earnedPoints,
-      spentPoints: state.spentPoints,
-      history: state.history,
-      lastAction: state.lastAction,
-      rewardRequests: state.rewardRequests,
-      tasks: state.tasks,
-      completedTasks: state.completedTasks,
-      penalties: state.penalties,
-      sharedGoals: state.sharedGoals,
-      wishlist: state.wishlist,
-      coupleStreak: state.coupleStreak,
-      bestCoupleStreak: state.bestCoupleStreak,
-      lastActivityDate: state.lastActivityDate,
-      notificationPreferences: state.notificationPreferences,
-      gameHistory: state.gameHistory,
-      dailyQuestionAnswer: state.dailyQuestionAnswer,
-      questionAnsweredDays: state.questionAnsweredDays,
-      dailyRewardDate: state.dailyRewardDate,
-      dailyChallengeStreak: state.dailyChallengeStreak,
-      lastGameRewardDate: state.lastGameRewardDate,
-      ownedThemes: state.ownedThemes,
-      selectedPremiumTheme: state.selectedPremiumTheme,
-      ownedDecorations: state.ownedDecorations,
-      selectedDecoration: state.selectedDecoration,
-      supportHistory: state.supportHistory,
-      language: state.language,
-      languageSelected: state.languageSelected,
-    };
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toPersist)).catch(() => {});
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toPersistedState(state))).catch(() => {});
   }, [
     state.isReady,
     state.onboardingComplete,
@@ -268,7 +275,19 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setRole: (role: Role) => setState((prev) => ({ ...prev, selectedRole: role })),
         setAvatar: (avatarId: number) => setState((prev) => ({ ...prev, selectedAvatar: avatarId })),
         setUserName: (name: string) => setState((prev) => ({ ...prev, userName: name })),
-        completeOnboarding: () => setState((prev) => ({ ...prev, onboardingComplete: true })),
+        // Writes the completed flag to storage *before* updating state, so a
+        // navigation that follows the returned promise (e.g. back to Splash)
+        // never sees -- and a relaunch never reloads -- the pre-onboarding state.
+        completeOnboarding: async (patch = {}) => {
+          const next: AppState = { ...stateRef.current, ...patch, onboardingComplete: true };
+          try {
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toPersistedState(next)));
+          } catch {
+            // Storage failure only costs persistence across relaunch; the
+            // in-memory flag below still lets this session continue.
+          }
+          setState((prev) => ({ ...prev, ...patch, onboardingComplete: true }));
+        },
         addAction: (title: string, points: number, authorRole?: Role) =>
           setState((prev) => {
             const item: ActionHistoryItem = {

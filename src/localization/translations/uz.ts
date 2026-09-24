@@ -1391,4 +1391,13 @@ export const uz: TranslationDictionary = {
     emptyOps: "Bu davr uchun hali hech narsa yo'q",
     historyButton: 'Tarix →',
   },
+  recovery: {
+    title: "Nimadir noto'g'ri ketdi",
+    message: "Bu ekranni ko'rsatib bo'lmadi. Kirishingiz, ma'lumotlaringiz va sozlamalaringiz saqlangan — ilovaga qaytishingiz mumkin.",
+    returnToApp: 'Ilovaga qaytish',
+    invalidParamsTitle: "Ekranni ochib bo'lmadi",
+    invalidQuiz: "Test ko'rsatilmagan yoki topilmadi. Orqaga qayting va o'yinlar bo'limidan testni tanlang.",
+    invalidTheme: "Mavzu ko'rsatilmagan yoki topilmadi. Orqaga qayting va mavzular do'konidan mavzuni tanlang.",
+    goBack: 'Orqaga qaytish',
+  },
 };

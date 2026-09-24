@@ -206,7 +206,7 @@ export interface AppActions {
   setRole: (role: Role) => void;
   setAvatar: (avatarId: number) => void;
   setUserName: (name: string) => void;
-  completeOnboarding: () => void;
+  completeOnboarding: (patch?: Partial<Pick<AppState, 'userName'>>) => Promise<void>;
   addAction: (title: string, points: number, authorRole?: Role) => void;
   requestReward: (reward: { id: string; title: string; cost: number }, message: string, rateSnapshot?: number) => void;
   // Custom or gift request -- cost/BOND/$ are computed by the caller from the

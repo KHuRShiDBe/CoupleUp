@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AppProvider } from './src/store/AppContext';
@@ -22,14 +22,20 @@ import { WishRouletteProvider } from './src/store/WishRouletteContext';
 import { useProfileAutoSync } from './src/store/useProfileAutoSync';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { InAppNotificationBanner } from './src/components/notifications/InAppNotificationBanner';
+import { AppErrorBoundary } from './src/components/common/AppErrorBoundary';
 
 const AppShell = () => {
   useProfileAutoSync();
+  // Bumped on recovery so the navigator remounts from Splash with fresh
+  // navigation state; providers above (session, stored data) are untouched.
+  const [navigatorKey, setNavigatorKey] = useState(0);
   return (
     <>
       <StatusBar style="dark" />
-      <RootNavigator />
-      <InAppNotificationBanner />
+      <AppErrorBoundary onRecover={() => setNavigatorKey((k) => k + 1)}>
+        <RootNavigator key={navigatorKey} />
+        <InAppNotificationBanner />
+      </AppErrorBoundary>
     </>
   );
 };

@@ -1390,4 +1390,13 @@ export const en: TranslationDictionary = {
     emptyOps: 'Nothing yet for this period',
     historyButton: 'History →',
   },
+  recovery: {
+    title: 'Something went wrong',
+    message: "This screen couldn't be shown. Your sign-in, data and settings are kept — you can return to the app.",
+    returnToApp: 'Return to the app',
+    invalidParamsTitle: "Couldn't open this screen",
+    invalidQuiz: 'The quiz is missing or unknown. Go back and pick a quiz from the games section.',
+    invalidTheme: 'The theme is missing or unknown. Go back and pick a theme in the theme store.',
+    goBack: 'Go back',
+  },
 };

@@ -10,15 +10,28 @@ import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { PurchaseModal } from '../../components/common/PurchaseModal';
 import { useAppStore } from '../../store/AppContext';
+import { InvalidParamsState } from '../../components/common/InvalidParamsState';
+import { useTranslation } from '../../localization/useTranslation';
+import { PremiumThemeId } from '../../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ThemePreview'>;
 
 const NAV_ICONS = ['Home', 'История', 'Добавить', 'Награды', 'Профиль'];
 
-export const ThemePreviewScreen = ({ route, navigation }: Props) => {
+const isPremiumThemeId = (value: unknown): value is PremiumThemeId =>
+  typeof value === 'string' && Object.prototype.hasOwnProperty.call(PREMIUM_THEMES, value);
+
+export const ThemePreviewScreen = (props: Props) => {
+  const { t } = useTranslation();
+  const themeId: unknown = props.route.params?.themeId;
+  if (!isPremiumThemeId(themeId)) return <InvalidParamsState message={t('recovery.invalidTheme')} />;
+  return <ThemePreviewContent {...props} themeId={themeId} />;
+};
+
+const ThemePreviewContent = ({ navigation, themeId }: Props & { themeId: PremiumThemeId }) => {
   const { colors: appColors } = useTheme();
   const { ownedThemes, selectedPremiumTheme, actions } = useAppStore();
-  const meta = PREMIUM_THEMES[route.params.themeId];
+  const meta = PREMIUM_THEMES[themeId];
   const preview = meta.colors;
   const owned = ownedThemes.includes(meta.id);
   const isApplied = selectedPremiumTheme === meta.id;

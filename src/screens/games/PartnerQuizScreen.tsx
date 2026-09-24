@@ -12,19 +12,29 @@ import { useAuth } from '../../store/AuthContext';
 import { useCoupleSync } from '../../store/CoupleSyncContext';
 import { useGames } from '../../store/GamesContext';
 import { useTranslation } from '../../localization/useTranslation';
-import { PARTNER_QUIZZES } from '../../constants/gameContent';
+import { PARTNER_QUIZZES, QuizId } from '../../constants/gameContent';
+import { InvalidParamsState } from '../../components/common/InvalidParamsState';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PartnerQuiz'>;
 
 const POINTS_PER_CORRECT = 2;
 
-export const PartnerQuizScreen = ({ route, navigation }: Props) => {
+const isQuizId = (value: unknown): value is QuizId =>
+  typeof value === 'string' && Object.prototype.hasOwnProperty.call(PARTNER_QUIZZES, value);
+
+export const PartnerQuizScreen = (props: Props) => {
+  const { t } = useTranslation();
+  const quizId: unknown = props.route.params?.quizId;
+  if (!isQuizId(quizId)) return <InvalidParamsState message={t('recovery.invalidQuiz')} />;
+  return <PartnerQuizContent {...props} quizId={quizId} />;
+};
+
+const PartnerQuizContent = ({ navigation, quizId }: Props & { quizId: QuizId }) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const auth = useAuth();
   const sync = useCoupleSync();
   const games = useGames();
-  const quizId = route.params.quizId;
   const { title, questions } = PARTNER_QUIZZES[quizId];
   const myId = auth.session?.user?.id ?? null;
   const partnerId = sync.partner?.id ?? null;

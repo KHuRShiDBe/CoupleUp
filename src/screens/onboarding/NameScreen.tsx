@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
@@ -25,6 +25,7 @@ export const NameScreen = ({ navigation }: Props) => {
   // Pre-fill with whatever's already there (e.g. re-entering this step)
   // instead of the generic local placeholder.
   const [name, setName] = useState(userName === 'Ты' ? '' : userName);
+  const submittingRef = useRef(false);
 
   const trimmed = name.trim();
   const isValid = trimmed.length >= MIN_LENGTH;
@@ -45,12 +46,16 @@ export const NameScreen = ({ navigation }: Props) => {
   }, [auth.session, auth.profile, navigation]);
 
   const handleContinue = async () => {
-    if (!isValid || auth.loading) return;
-    actions.setUserName(trimmed);
+    if (!isValid || auth.loading || submittingRef.current) return;
     if (!auth.configured) {
+      // Local-only mode: Splash routes on `onboardingComplete`, so it must be
+      // persisted (together with the name) before handing control back.
+      submittingRef.current = true;
+      await actions.completeOnboarding({ userName: trimmed });
       navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
       return;
     }
+    actions.setUserName(trimmed);
     const role = selectedRole ?? 'male';
     await auth.signInAnonymously({
       name: trimmed,
