@@ -1,0 +1,822 @@
+-- missing_migrations_0021_to_0024.sql
+-- 0019, 0020 and 0025 already confirmed present. Re-running only what is confirmed missing.
+
+-- ===================== 0021_quests_and_offers.sql =====================
+
+create table if not exists public.quest_progress (
+  id uuid primary key default gen_random_uuid(),
+  couple_id uuid not null references public.couples(id) on delete cascade,
+  period text not null check (period in ('daily', 'weekly', 'monthly', 'yearly')),
+  period_key text not null,
+  item_key text not null,
+  title text not null,
+  points int not null check (points > 0),
+  completed_by uuid references public.profiles(id) on delete set null,
+  completed_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique (couple_id, period, period_key, item_key)
+);
+
+alter table public.quest_progress enable row level security;
+
+drop policy if exists "quest_progress_select_member" on public.quest_progress;
+create policy "quest_progress_select_member" on public.quest_progress
+  for select using (public.is_couple_member(couple_id));
+
+grant usage on schema public to authenticated;
+grant select on public.quest_progress to authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'quest_progress') then
+    alter publication supabase_realtime add table public.quest_progress;
+  end if;
+end $$;
+
+create table if not exists public.quest_custom_items (
+  id uuid primary key default gen_random_uuid(),
+  couple_id uuid not null references public.couples(id) on delete cascade,
+  period text not null check (period in ('daily', 'weekly', 'monthly', 'yearly')),
+  period_key text not null,
+  item_key text not null,
+  title text not null,
+  points int not null check (points > 0),
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  unique (couple_id, period, period_key, item_key)
+);
+
+alter table public.quest_custom_items enable row level security;
+
+drop policy if exists "quest_custom_items_select_member" on public.quest_custom_items;
+create policy "quest_custom_items_select_member" on public.quest_custom_items
+  for select using (public.is_couple_member(couple_id));
+
+drop policy if exists "quest_custom_items_insert_member" on public.quest_custom_items;
+create policy "quest_custom_items_insert_member" on public.quest_custom_items
+  for insert with check (public.is_couple_member(couple_id) and created_by = auth.uid());
+
+grant select, insert on public.quest_custom_items to authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'quest_custom_items') then
+    alter publication supabase_realtime add table public.quest_custom_items;
+  end if;
+end $$;
+
+create table if not exists public.quest_bonus_claims (
+  id uuid primary key default gen_random_uuid(),
+  couple_id uuid not null references public.couples(id) on delete cascade,
+  period text not null check (period in ('daily', 'weekly', 'monthly', 'yearly')),
+  period_key text not null,
+  milestone int not null,
+  points int not null check (points > 0),
+  claimed_at timestamptz not null default now(),
+  unique (couple_id, period, period_key, milestone)
+);
+
+alter table public.quest_bonus_claims enable row level security;
+
+drop policy if exists "quest_bonus_claims_select_member" on public.quest_bonus_claims;
+create policy "quest_bonus_claims_select_member" on public.quest_bonus_claims
+  for select using (public.is_couple_member(couple_id));
+
+grant select on public.quest_bonus_claims to authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'quest_bonus_claims') then
+    alter publication supabase_realtime add table public.quest_bonus_claims;
+  end if;
+end $$;
+
+create table if not exists public.couple_offers (
+  id uuid primary key default gen_random_uuid(),
+  couple_id uuid not null references public.couples(id) on delete cascade,
+  created_by uuid not null references public.profiles(id) on delete cascade,
+  title text not null,
+  price_points int not null check (price_points > 0),
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
+  created_at timestamptz not null default now(),
+  resolved_at timestamptz
+);
+
+alter table public.couple_offers enable row level security;
+
+drop policy if exists "couple_offers_select_member" on public.couple_offers;
+create policy "couple_offers_select_member" on public.couple_offers
+  for select using (public.is_couple_member(couple_id));
+
+drop policy if exists "couple_offers_insert_member" on public.couple_offers;
+create policy "couple_offers_insert_member" on public.couple_offers
+  for insert with check (public.is_couple_member(couple_id) and created_by = auth.uid());
+
+grant select, insert on public.couple_offers to authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'couple_offers') then
+    alter publication supabase_realtime add table public.couple_offers;
+  end if;
+end $$;
+
+create table if not exists public.couple_offer_counters (
+  id uuid primary key default gen_random_uuid(),
+  couple_id uuid not null references public.couples(id) on delete cascade,
+  offer_id uuid not null references public.couple_offers(id) on delete cascade,
+  proposed_by uuid references public.profiles(id) on delete set null,
+  price_points int not null check (price_points > 0),
+  note text,
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'declined', 'superseded')),
+  created_at timestamptz not null default now(),
+  resolved_at timestamptz
+);
+
+alter table public.couple_offer_counters enable row level security;
+
+drop policy if exists "couple_offer_counters_select_member" on public.couple_offer_counters;
+create policy "couple_offer_counters_select_member" on public.couple_offer_counters
+  for select using (public.is_couple_member(couple_id));
+
+grant select on public.couple_offer_counters to authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'couple_offer_counters') then
+    alter publication supabase_realtime add table public.couple_offer_counters;
+  end if;
+end $$;
+
+create or replace function public.complete_quest_item(
+  p_couple_id uuid,
+  p_period text,
+  p_period_key text,
+  p_item_key text,
+  p_title text,
+  p_points int
+)
+returns boolean
+language plpgsql
+security definer
+as $$
+begin
+  if not public.is_couple_member(p_couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+
+  insert into public.quest_progress (couple_id, period, period_key, item_key, title, points, completed_by)
+  values (p_couple_id, p_period, p_period_key, p_item_key, p_title, p_points, auth.uid());
+
+  insert into public.actions (couple_id, author_id, recipient_id, title, points, type)
+  values (p_couple_id, auth.uid(), auth.uid(), p_title, p_points, 'action');
+
+  return true;
+exception when unique_violation then
+  return false;
+end;
+$$;
+
+create or replace function public.claim_quest_bonus(
+  p_couple_id uuid,
+  p_period text,
+  p_period_key text,
+  p_milestone int,
+  p_bonus_points int,
+  p_title text
+)
+returns boolean
+language plpgsql
+security definer
+as $$
+declare
+  actual_count int;
+begin
+  if not public.is_couple_member(p_couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+
+  select count(*) into actual_count
+  from public.quest_progress
+  where couple_id = p_couple_id and period = p_period and period_key = p_period_key;
+
+  if actual_count < p_milestone then
+    raise exception 'MILESTONE_NOT_REACHED';
+  end if;
+
+  insert into public.quest_bonus_claims (couple_id, period, period_key, milestone, points)
+  values (p_couple_id, p_period, p_period_key, p_milestone, p_bonus_points);
+
+  insert into public.actions (couple_id, author_id, recipient_id, title, points, type)
+  values (p_couple_id, auth.uid(), auth.uid(), p_title, p_bonus_points, 'action');
+
+  return true;
+exception when unique_violation then
+  return false;
+end;
+$$;
+
+create or replace function public.respond_couple_offer(p_offer_id uuid, p_accept boolean)
+returns public.couple_offers
+language plpgsql
+security definer
+as $$
+declare
+  o public.couple_offers;
+begin
+  select * into o from public.couple_offers where id = p_offer_id for update;
+  if o.id is null then
+    raise exception 'OFFER_NOT_FOUND';
+  end if;
+  if not public.is_couple_member(o.couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+  if o.created_by = auth.uid() then
+    raise exception 'CANNOT_SELF_CONFIRM';
+  end if;
+  if o.status <> 'pending' then
+    return o;
+  end if;
+
+  update public.couple_offers
+  set status = case when p_accept then 'accepted' else 'declined' end,
+      resolved_at = now()
+  where id = p_offer_id
+  returning * into o;
+
+  return o;
+end;
+$$;
+
+create or replace function public.propose_couple_offer_counter(
+  p_offer_id uuid,
+  p_price_points int,
+  p_note text default null
+)
+returns public.couple_offer_counters
+language plpgsql
+security definer
+as $$
+declare
+  o public.couple_offers;
+  c public.couple_offer_counters;
+begin
+  select * into o from public.couple_offers where id = p_offer_id for update;
+  if o.id is null then
+    raise exception 'OFFER_NOT_FOUND';
+  end if;
+  if not public.is_couple_member(o.couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+  if o.created_by = auth.uid() then
+    raise exception 'CANNOT_COUNTER_OWN_OFFER';
+  end if;
+  if o.status <> 'pending' then
+    raise exception 'OFFER_NOT_PENDING';
+  end if;
+  if p_price_points is null or p_price_points <= 0 then
+    raise exception 'INVALID_PRICE';
+  end if;
+
+  update public.couple_offer_counters
+  set status = 'superseded', resolved_at = now()
+  where offer_id = p_offer_id and status = 'pending';
+
+  insert into public.couple_offer_counters (couple_id, offer_id, proposed_by, price_points, note)
+  values (o.couple_id, p_offer_id, auth.uid(), p_price_points, p_note)
+  returning * into c;
+
+  return c;
+end;
+$$;
+
+create or replace function public.respond_couple_offer_counter(p_counter_id uuid, p_accept boolean)
+returns public.couple_offer_counters
+language plpgsql
+security definer
+as $$
+declare
+  c public.couple_offer_counters;
+  o public.couple_offers;
+begin
+  select * into c from public.couple_offer_counters where id = p_counter_id for update;
+  if c.id is null then
+    raise exception 'COUNTER_NOT_FOUND';
+  end if;
+  if not public.is_couple_member(c.couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+
+  select * into o from public.couple_offers where id = c.offer_id for update;
+
+  if auth.uid() <> o.created_by then
+    raise exception 'NOT_PROPOSER';
+  end if;
+  if c.status <> 'pending' then
+    return c;
+  end if;
+
+  if p_accept then
+    if o.status <> 'pending' then
+      raise exception 'OFFER_NOT_PENDING';
+    end if;
+
+    update public.couple_offers
+    set price_points = c.price_points, status = 'accepted', resolved_at = now()
+    where id = o.id;
+
+    update public.couple_offer_counters
+    set status = 'accepted', resolved_at = now()
+    where id = p_counter_id
+    returning * into c;
+  else
+    update public.couple_offer_counters
+    set status = 'declined', resolved_at = now()
+    where id = p_counter_id
+    returning * into c;
+  end if;
+
+  return c;
+end;
+$$;
+
+-- ===================== 0022_intimate_roulette.sql =====================
+
+create table if not exists public.intimate_roulette_consent (
+  couple_id uuid not null references public.couples(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  consented boolean not null default false,
+  updated_at timestamptz not null default now(),
+  primary key (couple_id, user_id)
+);
+
+alter table public.intimate_roulette_consent enable row level security;
+
+drop policy if exists "intimate_roulette_consent_select_member" on public.intimate_roulette_consent;
+create policy "intimate_roulette_consent_select_member" on public.intimate_roulette_consent
+  for select using (public.is_couple_member(couple_id));
+
+drop policy if exists "intimate_roulette_consent_upsert_self" on public.intimate_roulette_consent;
+create policy "intimate_roulette_consent_upsert_self" on public.intimate_roulette_consent
+  for insert with check (public.is_couple_member(couple_id) and user_id = auth.uid());
+
+drop policy if exists "intimate_roulette_consent_update_self" on public.intimate_roulette_consent;
+create policy "intimate_roulette_consent_update_self" on public.intimate_roulette_consent
+  for update using (user_id = auth.uid());
+
+grant usage on schema public to authenticated;
+grant select, insert, update on public.intimate_roulette_consent to authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'intimate_roulette_consent') then
+    alter publication supabase_realtime add table public.intimate_roulette_consent;
+  end if;
+end $$;
+
+create table if not exists public.intimate_roulette_settings (
+  couple_id uuid primary key references public.couples(id) on delete cascade,
+  allowed jsonb not null default '{"tender":true,"active":true,"dominant":true,"blindfold":true,"bondage":true,"roleplay":true}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.intimate_roulette_settings enable row level security;
+
+drop policy if exists "intimate_roulette_settings_select_member" on public.intimate_roulette_settings;
+create policy "intimate_roulette_settings_select_member" on public.intimate_roulette_settings
+  for select using (public.is_couple_member(couple_id));
+
+drop policy if exists "intimate_roulette_settings_insert_member" on public.intimate_roulette_settings;
+create policy "intimate_roulette_settings_insert_member" on public.intimate_roulette_settings
+  for insert with check (public.is_couple_member(couple_id));
+
+drop policy if exists "intimate_roulette_settings_update_member" on public.intimate_roulette_settings;
+create policy "intimate_roulette_settings_update_member" on public.intimate_roulette_settings
+  for update using (public.is_couple_member(couple_id));
+
+grant select, insert, update on public.intimate_roulette_settings to authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'intimate_roulette_settings') then
+    alter publication supabase_realtime add table public.intimate_roulette_settings;
+  end if;
+end $$;
+
+create table if not exists public.intimate_roulette_results (
+  id uuid primary key default gen_random_uuid(),
+  couple_id uuid not null references public.couples(id) on delete cascade,
+  result_key text not null,
+  spun_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.intimate_roulette_results enable row level security;
+
+drop policy if exists "intimate_roulette_results_select_member" on public.intimate_roulette_results;
+create policy "intimate_roulette_results_select_member" on public.intimate_roulette_results
+  for select using (public.is_couple_member(couple_id));
+
+drop policy if exists "intimate_roulette_results_insert_member" on public.intimate_roulette_results;
+create policy "intimate_roulette_results_insert_member" on public.intimate_roulette_results
+  for insert with check (public.is_couple_member(couple_id) and spun_by = auth.uid());
+
+grant select, insert on public.intimate_roulette_results to authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'intimate_roulette_results') then
+    alter publication supabase_realtime add table public.intimate_roulette_results;
+  end if;
+end $$;
+
+-- ===================== 0023_agreements.sql =====================
+
+alter table public.couple_offers add column if not exists deadline timestamptz;
+alter table public.couple_offers add column if not exists assignee_id uuid references public.profiles(id) on delete set null;
+alter table public.couple_offers add column if not exists cancel_requested_by uuid references public.profiles(id) on delete set null;
+
+alter table public.couple_offers drop constraint if exists couple_offers_status_check;
+alter table public.couple_offers add constraint couple_offers_status_check
+  check (status in ('pending', 'accepted', 'declined', 'completed', 'failed', 'cancel_pending', 'cancelled'));
+
+create or replace function public.respond_couple_offer(p_offer_id uuid, p_accept boolean)
+returns public.couple_offers
+language plpgsql
+security definer
+as $$
+declare
+  o public.couple_offers;
+begin
+  select * into o from public.couple_offers where id = p_offer_id for update;
+  if o.id is null then
+    raise exception 'OFFER_NOT_FOUND';
+  end if;
+  if not public.is_couple_member(o.couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+  if o.created_by = auth.uid() then
+    raise exception 'CANNOT_SELF_CONFIRM';
+  end if;
+  if o.status <> 'pending' then
+    return o;
+  end if;
+
+  update public.couple_offers
+  set status = case when p_accept then 'accepted' else 'declined' end,
+      assignee_id = case when p_accept then auth.uid() else assignee_id end,
+      resolved_at = now()
+  where id = p_offer_id
+  returning * into o;
+
+  return o;
+end;
+$$;
+
+create or replace function public.respond_couple_offer_counter(p_counter_id uuid, p_accept boolean)
+returns public.couple_offer_counters
+language plpgsql
+security definer
+as $$
+declare
+  c public.couple_offer_counters;
+  o public.couple_offers;
+begin
+  select * into c from public.couple_offer_counters where id = p_counter_id for update;
+  if c.id is null then
+    raise exception 'COUNTER_NOT_FOUND';
+  end if;
+  if not public.is_couple_member(c.couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+
+  select * into o from public.couple_offers where id = c.offer_id for update;
+
+  if auth.uid() <> o.created_by then
+    raise exception 'NOT_PROPOSER';
+  end if;
+  if c.status <> 'pending' then
+    return c;
+  end if;
+
+  if p_accept then
+    if o.status <> 'pending' then
+      raise exception 'OFFER_NOT_PENDING';
+    end if;
+
+    update public.couple_offers
+    set price_points = c.price_points, status = 'accepted', assignee_id = c.proposed_by, resolved_at = now()
+    where id = o.id;
+
+    update public.couple_offer_counters
+    set status = 'accepted', resolved_at = now()
+    where id = p_counter_id
+    returning * into c;
+  else
+    update public.couple_offer_counters
+    set status = 'declined', resolved_at = now()
+    where id = p_counter_id
+    returning * into c;
+  end if;
+
+  return c;
+end;
+$$;
+
+create or replace function public.complete_agreement(p_offer_id uuid)
+returns public.couple_offers
+language plpgsql
+security definer
+as $$
+declare
+  o public.couple_offers;
+begin
+  select * into o from public.couple_offers where id = p_offer_id for update;
+  if o.id is null then
+    raise exception 'OFFER_NOT_FOUND';
+  end if;
+  if not public.is_couple_member(o.couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+  if auth.uid() <> o.assignee_id then
+    raise exception 'NOT_ASSIGNEE';
+  end if;
+  if o.status <> 'accepted' then
+    raise exception 'AGREEMENT_NOT_ACTIVE';
+  end if;
+
+  update public.couple_offers
+  set status = 'completed', resolved_at = now()
+  where id = p_offer_id
+  returning * into o;
+
+  insert into public.actions (couple_id, author_id, recipient_id, title, points, type)
+  values (o.couple_id, o.created_by, o.assignee_id, o.title, o.price_points, 'action');
+
+  return o;
+end;
+$$;
+
+create or replace function public.fail_agreement_penalty(p_offer_id uuid, p_multiplier int default 2)
+returns public.couple_offers
+language plpgsql
+security definer
+as $$
+declare
+  o public.couple_offers;
+begin
+  select * into o from public.couple_offers where id = p_offer_id for update;
+  if o.id is null then
+    raise exception 'OFFER_NOT_FOUND';
+  end if;
+  if not public.is_couple_member(o.couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+  if o.status <> 'accepted' then
+    raise exception 'AGREEMENT_NOT_ACTIVE';
+  end if;
+  if o.deadline is null or now() <= o.deadline then
+    raise exception 'DEADLINE_NOT_PASSED';
+  end if;
+
+  update public.couple_offers
+  set status = 'failed', resolved_at = now()
+  where id = p_offer_id
+  returning * into o;
+
+  insert into public.actions (couple_id, author_id, recipient_id, title, points, type)
+  values (o.couple_id, o.assignee_id, o.assignee_id, o.title, -(o.price_points * greatest(p_multiplier, 1)), 'action');
+
+  return o;
+end;
+$$;
+
+create or replace function public.request_cancel_agreement(p_offer_id uuid)
+returns public.couple_offers
+language plpgsql
+security definer
+as $$
+declare
+  o public.couple_offers;
+begin
+  select * into o from public.couple_offers where id = p_offer_id for update;
+  if o.id is null then
+    raise exception 'OFFER_NOT_FOUND';
+  end if;
+  if not public.is_couple_member(o.couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+  if auth.uid() <> o.created_by and auth.uid() <> o.assignee_id then
+    raise exception 'NOT_A_PARTY';
+  end if;
+  if o.status <> 'accepted' then
+    raise exception 'AGREEMENT_NOT_ACTIVE';
+  end if;
+
+  update public.couple_offers
+  set status = 'cancel_pending', cancel_requested_by = auth.uid()
+  where id = p_offer_id
+  returning * into o;
+
+  return o;
+end;
+$$;
+
+create or replace function public.respond_cancel_agreement(p_offer_id uuid, p_accept boolean)
+returns public.couple_offers
+language plpgsql
+security definer
+as $$
+declare
+  o public.couple_offers;
+begin
+  select * into o from public.couple_offers where id = p_offer_id for update;
+  if o.id is null then
+    raise exception 'OFFER_NOT_FOUND';
+  end if;
+  if not public.is_couple_member(o.couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+  if o.status <> 'cancel_pending' then
+    raise exception 'AGREEMENT_NOT_ACTIVE';
+  end if;
+  if auth.uid() = o.cancel_requested_by then
+    raise exception 'CANNOT_SELF_CONFIRM';
+  end if;
+  if auth.uid() <> o.created_by and auth.uid() <> o.assignee_id then
+    raise exception 'NOT_A_PARTY';
+  end if;
+
+  update public.couple_offers
+  set status = case when p_accept then 'cancelled' else 'accepted' end,
+      cancel_requested_by = case when p_accept then cancel_requested_by else null end,
+      resolved_at = case when p_accept then now() else null end
+  where id = p_offer_id
+  returning * into o;
+
+  return o;
+end;
+$$;
+
+alter table public.profiles add column if not exists photo_url text;
+
+insert into storage.buckets (id, name, public)
+values ('profile-photos', 'profile-photos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "profile_photos_select_all" on storage.objects;
+create policy "profile_photos_select_all" on storage.objects
+  for select using (bucket_id = 'profile-photos');
+
+drop policy if exists "profile_photos_write_own" on storage.objects;
+create policy "profile_photos_write_own" on storage.objects
+  for insert with check (bucket_id = 'profile-photos' and auth.uid()::text = (storage.foldername(name))[1]);
+
+drop policy if exists "profile_photos_update_own" on storage.objects;
+create policy "profile_photos_update_own" on storage.objects
+  for update using (bucket_id = 'profile-photos' and auth.uid()::text = (storage.foldername(name))[1]);
+
+drop policy if exists "profile_photos_delete_own" on storage.objects;
+create policy "profile_photos_delete_own" on storage.objects
+  for delete using (bucket_id = 'profile-photos' and auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ===================== 0024_wish_roulette.sql =====================
+
+create table if not exists public.wish_roulette_results (
+  id uuid primary key default gen_random_uuid(),
+  couple_id uuid not null references public.couples(id) on delete cascade,
+  spun_by uuid references public.profiles(id) on delete set null,
+  gender text not null check (gender in ('male', 'female')),
+  item_key text not null,
+  value_points int not null,
+  cost_points int not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.wish_roulette_results enable row level security;
+
+drop policy if exists "wish_roulette_results_select_member" on public.wish_roulette_results;
+create policy "wish_roulette_results_select_member" on public.wish_roulette_results
+  for select using (public.is_couple_member(couple_id));
+
+grant usage on schema public to authenticated;
+grant select on public.wish_roulette_results to authenticated;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'wish_roulette_results'
+  ) then
+    alter publication supabase_realtime add table public.wish_roulette_results;
+  end if;
+end $$;
+
+create or replace function public.spin_wish_roulette(p_couple_id uuid, p_gender text)
+returns table(item_key text, value_points int, cost_points int, balance_after int)
+language plpgsql
+security definer
+as $$
+declare
+  v_rate int;
+  v_cost int;
+  v_balance int;
+  v_item_key text;
+  v_value_bond int;
+begin
+  if not public.is_couple_member(p_couple_id) then
+    raise exception 'NOT_A_MEMBER';
+  end if;
+  if p_gender not in ('male', 'female') then
+    raise exception 'INVALID_GENDER';
+  end if;
+
+  select b.points_per_bond into v_rate from public.bond_rates b order by b.effective_from desc limit 1;
+  v_rate := coalesce(v_rate, 100);
+  v_cost := 500 * v_rate;
+
+  select coalesce(sum(a.points), 0) into v_balance
+  from public.actions a
+  where a.couple_id = p_couple_id and a.recipient_id = auth.uid();
+
+  if v_balance < v_cost then
+    raise exception 'ROULETTE_NOT_ENOUGH_BOND';
+  end if;
+
+  with pool(pool_gender, pool_key, weight, value_bond) as (
+    values
+      ('male'::text, 'm_tea_coffee'::text, 8::numeric, 50::int),
+      ('male', 'm_treat', 8, 80),
+      ('male', 'm_hugs', 8, 100),
+      ('male', 'm_massage_10', 8, 120),
+      ('male', 'm_walk', 8, 150),
+      ('male', 'm_movie', 6, 300),
+      ('male', 'm_favorite_dish', 6, 350),
+      ('male', 'm_massage_20', 6, 380),
+      ('male', 'm_evening_together', 6, 400),
+      ('male', 'm_massage_30', 6, 450),
+      ('male', 'm_dinner_choice', 4, 500),
+      ('male', 'm_date', 4, 500),
+      ('male', 'm_intimate_massage', 4, 500),
+      ('male', 'm_special_closeness', 4, 500),
+      ('male', 'm_intimate_evening', 4, 500),
+      ('male', 'm_his_pose', 2, 1500),
+      ('male', 'm_special_scenario', 2, 1500),
+      ('male', 'm_big_day', 2, 1500),
+      ('male', 'm_jackpot', 1, 5000),
+      ('male', 'm_grand_prize', 1, 5000),
+      ('female', 'f_tea_coffee', 8, 50),
+      ('female', 'f_chocolate', 8, 80),
+      ('female', 'f_compliments', 8, 100),
+      ('female', 'f_breakfast', 8, 120),
+      ('female', 'f_cafe', 8, 150),
+      ('female', 'f_foot_massage', 6, 300),
+      ('female', 'f_movie', 6, 350),
+      ('female', 'f_favorite_dish', 6, 380),
+      ('female', 'f_flowers', 6, 400),
+      ('female', 'f_massage_20', 6, 450),
+      ('female', 'f_massage_30', 4, 500),
+      ('female', 'f_dinner_choice', 4, 500),
+      ('female', 'f_intimate_massage', 4, 500),
+      ('female', 'f_special_closeness', 4, 500),
+      ('female', 'f_date', 4, 500),
+      ('female', 'f_intimate_evening', 2, 1500),
+      ('female', 'f_her_pose', 2, 1500),
+      ('female', 'f_big_day', 2, 1500),
+      ('female', 'f_jackpot', 1, 5000),
+      ('female', 'f_shopping', 1, 5000)
+  ),
+  gendered as (
+    select pool_key, weight, value_bond from pool where pool_gender = p_gender
+  ),
+  ranked as (
+    select pool_key, value_bond,
+           sum(weight) over (order by pool_key) as cum_weight,
+           sum(weight) over () as total_weight
+    from gendered
+  ),
+  roll as (
+    select random() * max(total_weight) as r from ranked
+  )
+  select ranked.pool_key, ranked.value_bond into v_item_key, v_value_bond
+  from ranked, roll
+  where ranked.cum_weight >= roll.r
+  order by ranked.cum_weight
+  limit 1;
+
+  insert into public.actions (couple_id, author_id, recipient_id, title, points, type)
+  values (p_couple_id, auth.uid(), auth.uid(), 'Рулетка желаний: ' || v_item_key, (v_value_bond * v_rate) - v_cost, 'reward');
+
+  insert into public.wish_roulette_results (couple_id, spun_by, gender, item_key, value_points, cost_points)
+  values (p_couple_id, auth.uid(), p_gender, v_item_key, v_value_bond * v_rate, v_cost);
+
+  select coalesce(sum(a.points), 0) into v_balance
+  from public.actions a
+  where a.couple_id = p_couple_id and a.recipient_id = auth.uid();
+
+  return query select v_item_key, v_value_bond * v_rate, v_cost, v_balance;
+end;
+$$;
+
+grant execute on function public.spin_wish_roulette(uuid, text) to authenticated;
+
