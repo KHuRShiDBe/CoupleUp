@@ -6,6 +6,7 @@ import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, spacing } from '../../theme/layout';
 import { PREMIUM_THEMES } from '../../theme/premiumThemes';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { PurchaseModal } from '../../components/common/PurchaseModal';
@@ -46,7 +47,8 @@ const ThemePreviewContent = ({ navigation, themeId }: Props & { themeId: Premium
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={`Тема ${meta.title}`} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <Text style={[styles.hint, { color: appColors.textSecondary }]}>
@@ -107,7 +109,7 @@ const ThemePreviewContent = ({ navigation, themeId }: Props & { themeId: Premium
         onConfirm={handlePurchaseConfirm}
         onCancel={() => setShowPurchase(false)}
       />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

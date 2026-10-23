@@ -19,6 +19,7 @@ import { CoupleOffersProvider } from './src/store/CoupleOffersContext';
 import { IntimateRouletteProvider } from './src/store/IntimateRouletteContext';
 import { ShopRouletteProvider } from './src/store/ShopRouletteContext';
 import { WishRouletteProvider } from './src/store/WishRouletteContext';
+import { ChatProvider } from './src/store/ChatContext';
 import { useProfileAutoSync } from './src/store/useProfileAutoSync';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { InAppNotificationBanner } from './src/components/notifications/InAppNotificationBanner';
@@ -61,7 +62,9 @@ export default function App() {
                                     <IntimateRouletteProvider>
                                       <ShopRouletteProvider>
                                         <WishRouletteProvider>
-                                          <AppShell />
+                                          <ChatProvider>
+                                            <AppShell />
+                                          </ChatProvider>
                                         </WishRouletteProvider>
                                       </ShopRouletteProvider>
                                     </IntimateRouletteProvider>

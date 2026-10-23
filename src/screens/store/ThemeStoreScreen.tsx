@@ -7,6 +7,7 @@ import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { maleTheme, femaleTheme } from '../../theme/colors';
 import { PREMIUM_THEME_IDS, PREMIUM_THEMES } from '../../theme/premiumThemes';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { useAppStore } from '../../store/AppContext';
 import { useTranslation } from '../../localization/useTranslation';
@@ -24,7 +25,8 @@ export const ThemeStoreScreen = ({ navigation }: Props) => {
   ];
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <ScreenHeader title={t('themeStore.title')} onBack={() => navigation.goBack()} />
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('themeStore.subtitle')}</Text>
@@ -80,7 +82,7 @@ export const ThemeStoreScreen = ({ navigation }: Props) => {
           })}
         </View>
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

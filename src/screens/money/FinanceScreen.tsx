@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { FilterTabs } from '../../components/common/FilterTabs';
@@ -68,7 +69,8 @@ export const FinanceScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('finance.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <FilterTabs options={periodTabs} value={period} onChange={(key) => setPeriod(key as FinancePeriod)} />
@@ -119,7 +121,7 @@ export const FinanceScreen = ({ navigation }: Props) => {
 
         <PrimaryButton label={t('finance.historyButton')} onPress={goToHistory} variant="outline" style={styles.historyButton} />
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

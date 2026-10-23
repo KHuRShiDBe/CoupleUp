@@ -22,6 +22,8 @@ export const ACTIVITY_CATEGORY_BY_TYPE: Record<DbNotificationType, ActivityCateg
   promise_completed: 'couple',
   challenge_completed: 'couple',
   nudge: 'couple',
+  action_request: 'requests',
+  action_response: 'requests',
 };
 
 export const ACTIVITY_ICON_BY_TYPE: Record<DbNotificationType, IconName> = {
@@ -40,4 +42,6 @@ export const ACTIVITY_ICON_BY_TYPE: Record<DbNotificationType, IconName> = {
   promise_completed: 'pair',
   challenge_completed: 'achievement',
   nudge: 'notification',
+  action_request: 'tasks',
+  action_response: 'tasks',
 };

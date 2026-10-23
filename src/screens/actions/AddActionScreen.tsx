@@ -1,10 +1,12 @@
 import React, { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { MainTabParamList } from '../../navigation/types';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { FilterTabs } from '../../components/common/FilterTabs';
 import { BackendStatusBanner } from '../../components/common/BackendStatusBanner';
@@ -16,7 +18,7 @@ import { haptics } from '../../utils/haptics';
 import { FAILURE_PENALTY_MULTIPLIER } from '../../constants/coupleEconomyConfig';
 import { DbCoupleOffer } from '../../types/database';
 
-type Props = BottomTabScreenProps<MainTabParamList, 'Add'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'Add'>;
 type Direction = 'toPartner' | 'fromPartner';
 type AddTab = 'quick' | 'offer';
 
@@ -162,13 +164,16 @@ export const AddActionScreen = ({ navigation }: Props) => {
   // same action twice.
   const submittedRef = useRef(false);
 
+  // A quick-tab entry is never self-credited anymore -- it's now a pending
+  // request the OTHER couple member must approve (see createActionRequest),
+  // regardless of which direction picked who the points go to.
   const handlePickCategory = async (title: string, points: number) => {
-    if (!direction || submittedRef.current) return;
+    if (!direction || !sync.partner || submittedRef.current) return;
     submittedRef.current = true;
     haptics.confirm();
-    const ok = await sync.addAction(title, points, recipientFor(direction));
+    const ok = await sync.createActionRequest(title, points, recipientFor(direction)!);
     if (ok) {
-      navigation.navigate('Home');
+      navigation.navigate('Main', { screen: 'Home' });
     } else {
       // Failed (e.g. network drop) -- let the user see the error and retry
       // instead of silently losing the action while the screen moves on.
@@ -177,22 +182,23 @@ export const AddActionScreen = ({ navigation }: Props) => {
   };
 
   const handleCustomSubmit = async () => {
-    if (!direction || !customTitle.trim() || submittedRef.current) return;
+    if (!direction || !sync.partner || !customTitle.trim() || submittedRef.current) return;
     submittedRef.current = true;
     haptics.confirm();
     const parsed = Math.abs(parseInt(customPoints, 10) || 0);
-    const ok = await sync.addAction(customTitle.trim(), parsed, recipientFor(direction));
+    const ok = await sync.createActionRequest(customTitle.trim(), parsed, recipientFor(direction)!);
     if (ok) {
-      navigation.navigate('Home');
+      navigation.navigate('Main', { screen: 'Home' });
     } else {
       submittedRef.current = false;
     }
   };
 
   return (
-    <ScreenContainer inTabBar>
+    <ScreenBackground>
+    <ScreenContainer transparent>
+      <ScreenHeader title={t('addAction.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <Text style={[styles.title, { color: colors.text }]}>{t('addAction.title')}</Text>
 
         {!!sync.error && <BackendStatusBanner message={sync.error} onRetry={sync.clearError} />}
         {!!offers.error && <BackendStatusBanner message={offers.error} onRetry={offers.clearError} />}
@@ -417,6 +423,8 @@ export const AddActionScreen = ({ navigation }: Props) => {
           </>
         ) : (
           <>
+        <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('addAction.pendingNote')}</Text>
+
         <Text style={[styles.label, { color: colors.text }]}>{t('addAction.whoLabel')}</Text>
         <View style={styles.directionRow}>
           <Pressable
@@ -448,7 +456,10 @@ export const AddActionScreen = ({ navigation }: Props) => {
         </View>
 
         <Text style={[styles.label, { color: colors.text }]}>{t('addAction.actionLabel')}</Text>
-        <View style={[styles.categoryList, !direction && styles.disabled]} pointerEvents={direction ? 'auto' : 'none'}>
+        <View
+          style={[styles.categoryList, (!direction || !sync.partner) && styles.disabled]}
+          pointerEvents={direction && sync.partner ? 'auto' : 'none'}
+        >
           {CATEGORY_KEYS.map((c) => (
             <Pressable
               key={c.id}
@@ -491,28 +502,26 @@ export const AddActionScreen = ({ navigation }: Props) => {
             <PrimaryButton
               label={t('addAction.addButton')}
               onPress={handleCustomSubmit}
-              disabled={!direction || !customTitle.trim()}
+              disabled={!direction || !sync.partner || !customTitle.trim()}
             />
           </View>
         )}
 
-        {!direction && <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('addAction.hint')}</Text>}
+        {!direction ? (
+          <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('addAction.hint')}</Text>
+        ) : (
+          !sync.partner && <Text style={[styles.hint, { color: colors.textSecondary }]}>{t('addAction.noPartnerHint')}</Text>
+        )}
           </>
         )}
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
 const styles = StyleSheet.create({
   scroll: {
     paddingBottom: spacing.xl,
-  },
-  title: {
-    fontSize: fontSize.xxl,
-    fontWeight: '700',
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
   },
   label: {
     fontSize: fontSize.sm,

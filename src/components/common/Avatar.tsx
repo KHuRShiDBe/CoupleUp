@@ -8,7 +8,7 @@ interface Props {
   role: Role;
   avatarId: number | null;
   // A real uploaded profile photo, when set, always wins over the fixed
-  // per-role avatar image -- see ProfileScreen's photo upload flow.
+  // per-role avatar image -- see SettingsScreen's photo upload flow.
   photoUrl?: string | null;
   size?: number;
   selected?: boolean;

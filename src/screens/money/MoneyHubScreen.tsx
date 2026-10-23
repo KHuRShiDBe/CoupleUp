@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { FilterTabs } from '../../components/common/FilterTabs';
 import { useTranslation } from '../../localization/useTranslation';
@@ -29,7 +30,8 @@ export const MoneyHubScreen = ({ navigation }: Props) => {
   ];
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('hubs.moneyTitle')} onBack={() => navigation.goBack()} />
       <FilterTabs options={tabs} value={tab} onChange={(key) => setTab(key as Tab)} />
       {tab === 'budget' && <BudgetBody />}
@@ -38,6 +40,6 @@ export const MoneyHubScreen = ({ navigation }: Props) => {
       {tab === 'savings' && <SavingsGoalBody />}
       {tab === 'fairSplit' && <FairSplitBody />}
       {tab === 'summary' && <MoneySummaryBody />}
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };

@@ -5,16 +5,21 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { LoadingState } from '../../components/common/LoadingState';
 import { BackendStatusBanner } from '../../components/common/BackendStatusBanner';
+import { PrimaryButton } from '../../components/buttons/PrimaryButton';
+import { ConfirmationModal } from '../../components/common/ConfirmationModal';
 import { useTranslation, TranslationKey } from '../../localization/useTranslation';
 import { useAuth } from '../../store/AuthContext';
-import { listMyInventory } from '../../services/supabase/savingsService';
-import { subscribeToSavings } from '../../services/supabase/realtime';
+import { useCoupleSync } from '../../store/CoupleSyncContext';
+import { listCoupleInventory, requestUseInventoryItem, respondInventoryUse } from '../../services/supabase/savingsService';
+import { subscribeToCoupleInventory } from '../../services/supabase/realtime';
 import { friendlyMessage, toServiceError } from '../../services/supabase/errors';
 import { DbWishInventoryItem, WishInventoryStatus } from '../../types/database';
 import { formatRelativeTime } from '../../utils/date';
+import { haptics } from '../../utils/haptics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Savings'>;
 
@@ -39,14 +44,18 @@ export const WinningsScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const auth = useAuth();
+  const sync = useCoupleSync();
   const userId = auth.session?.user?.id ?? null;
+  const coupleId = sync.couple?.id ?? null;
 
   const [items, setItems] = useState<DbWishInventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [useTarget, setUseTarget] = useState<DbWishInventoryItem | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!userId) {
+    if (!coupleId) {
       setItems([]);
       setLoading(false);
       return;
@@ -54,67 +63,148 @@ export const WinningsScreen = ({ navigation }: Props) => {
     setLoading(true);
     setError(null);
     try {
-      setItems(await listMyInventory(userId));
+      setItems(await listCoupleInventory(coupleId));
     } catch (e) {
       setError(friendlyMessage(toServiceError(e)));
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [coupleId]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
   useEffect(() => {
-    if (!userId) return;
-    return subscribeToSavings(userId, refresh);
-  }, [userId, refresh]);
+    if (!coupleId) return;
+    return subscribeToCoupleInventory(coupleId, refresh);
+  }, [coupleId, refresh]);
 
-  const couponCount = items.filter((i) => i.item_key === COUPON_ITEM_KEY && i.status === 'available').length;
-  const wonItems = items.filter((i) => i.item_key !== COUPON_ITEM_KEY);
+  const myItems = items.filter((i) => i.owner_id === userId && i.item_key !== COUPON_ITEM_KEY);
+  const couponCount = items.filter((i) => i.owner_id === userId && i.item_key === COUPON_ITEM_KEY && i.status === 'available').length;
+  // Items my partner won and has asked to use -- only I (never they) may confirm.
+  const partnerRequests = items.filter((i) => i.owner_id !== userId && i.status === 'pending_use');
+
+  const confirmUse = () => {
+    if (!useTarget) return;
+    const item = useTarget;
+    setUseTarget(null);
+    haptics.select();
+    setBusyId(item.id);
+    requestUseInventoryItem(item.id)
+      .then(refresh)
+      .catch((e) => setError(friendlyMessage(toServiceError(e))))
+      .finally(() => setBusyId(null));
+  };
+
+  const respond = (item: DbWishInventoryItem, accept: boolean) => {
+    haptics.select();
+    setBusyId(item.id);
+    respondInventoryUse(item.id, accept)
+      .then(() => {
+        if (accept) haptics.success();
+        refresh();
+      })
+      .catch((e) => setError(friendlyMessage(toServiceError(e))))
+      .finally(() => setBusyId(null));
+  };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('winnings.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {!!error && <BackendStatusBanner message={error} onRetry={refresh} />}
 
-        <View style={[styles.infoCard, shadow.soft, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.infoLine, { color: '#FFFFFF' }]}>{t('winnings.couponsLabel', { count: couponCount })}</Text>
+        <View style={[styles.infoCard, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+          <Text style={[styles.infoLine, { color: colors.text }]}>{t('winnings.couponsLabel', { count: couponCount })}</Text>
         </View>
 
         {loading ? (
           <LoadingState />
         ) : (
           <>
+            {partnerRequests.length > 0 && (
+              <>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('winnings.partnerRequestsTitle')}</Text>
+                {partnerRequests.map((item) => (
+                  <View key={item.id} style={[styles.itemRow, shadow.soft, { backgroundColor: colors.card, borderColor: colors.primary }]}>
+                    <View style={styles.itemBody}>
+                      <Text style={[styles.itemTitle, { color: colors.text }]}>{resolveItemTitle(item.item_key, t)}</Text>
+                      <Text style={[styles.itemTime, { color: colors.textSecondary }]}>{formatRelativeTime(item.requested_at ?? item.won_at)}</Text>
+                    </View>
+                    <View style={styles.actionsRow}>
+                      <PrimaryButton
+                        label={t('winnings.confirm')}
+                        onPress={() => respond(item, true)}
+                        disabled={busyId === item.id}
+                        loading={busyId === item.id}
+                        style={styles.actionButton}
+                      />
+                      <PrimaryButton
+                        label={t('winnings.decline')}
+                        onPress={() => respond(item, false)}
+                        disabled={busyId === item.id}
+                        variant="outline"
+                        style={styles.actionButton}
+                      />
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
+
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('winnings.itemsTitle')}</Text>
-            {wonItems.length === 0 ? (
+            {myItems.length === 0 ? (
               <Text style={[styles.empty, { color: colors.textSecondary }]}>{t('winnings.empty')}</Text>
             ) : (
-              wonItems.map((item) => (
+              myItems.map((item) => (
                 <View key={item.id} style={[styles.itemRow, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={styles.itemBody}>
                     <Text style={[styles.itemTitle, { color: colors.text }]}>{resolveItemTitle(item.item_key, t)}</Text>
                     <Text style={[styles.itemTime, { color: colors.textSecondary }]}>{formatRelativeTime(item.won_at)}</Text>
                   </View>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: item.status === 'available' ? colors.primary : colors.border },
-                    ]}
-                  >
-                    <Text style={[styles.statusText, { color: item.status === 'available' ? colors.textOnPrimary : colors.textSecondary }]}>
-                      {t(STATUS_LABEL_KEY[item.status])}
-                    </Text>
-                  </View>
+                  {item.status === 'available' ? (
+                    <PrimaryButton
+                      label={t('winnings.use')}
+                      onPress={() => setUseTarget(item)}
+                      disabled={busyId === item.id}
+                      loading={busyId === item.id}
+                      style={styles.useButton}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: item.status === 'pending_use' ? colors.primary : colors.border },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: item.status === 'pending_use' ? colors.textOnPrimary : colors.textSecondary },
+                        ]}
+                      >
+                        {t(STATUS_LABEL_KEY[item.status])}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               ))
             )}
           </>
         )}
       </ScrollView>
-    </ScreenContainer>
+
+      <ConfirmationModal
+        visible={!!useTarget}
+        title={t('winnings.useConfirmTitle')}
+        message={t('winnings.useConfirmMessage')}
+        confirmLabel={t('winnings.use')}
+        onConfirm={confirmUse}
+        onCancel={() => setUseTarget(null)}
+      />
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -136,6 +226,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: '700',
     marginBottom: spacing.sm,
+    marginTop: spacing.sm,
   },
   empty: {
     fontSize: fontSize.sm,
@@ -169,5 +260,17 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 11,
     fontWeight: '700',
+  },
+  useButton: {
+    minHeight: 36,
+    paddingHorizontal: spacing.md,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  actionButton: {
+    minHeight: 36,
+    paddingHorizontal: spacing.md,
   },
 });

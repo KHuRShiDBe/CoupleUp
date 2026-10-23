@@ -27,8 +27,8 @@ export const SettingsRow = ({ icon, label, subtitle, onPress }: SettingsRowProps
       disabled={!onPress}
       style={[styles.row, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
-      <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
-        <IconImage name={icon} size={20} />
+      <View style={styles.iconWrap}>
+        <IconImage name={icon} size={22} />
       </View>
       <View style={styles.rowBody}>
         <Text style={[styles.rowLabel, { color: colors.text }]}>{label}</Text>
@@ -56,11 +56,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: spacing.md,
   },
   rowBody: {

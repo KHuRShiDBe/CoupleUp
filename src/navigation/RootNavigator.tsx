@@ -5,15 +5,16 @@ import { RootStackParamList } from './types';
 import { navigationRef } from './navigationRef';
 import { MainTabNavigator } from './MainTabNavigator';
 import { HistoryScreen } from '../screens/history/HistoryScreen';
-import { ProfileScreen } from '../screens/profile/ProfileScreen';
+import { AddActionScreen } from '../screens/actions/AddActionScreen';
+import { NotificationsScreen } from '../screens/notifications/NotificationsScreen';
 import { SplashScreen } from '../screens/onboarding/SplashScreen';
 import { LanguageSelectScreen } from '../screens/onboarding/LanguageSelectScreen';
 import { WelcomeScreen } from '../screens/onboarding/WelcomeScreen';
 import { RoleSelectionScreen } from '../screens/onboarding/RoleSelectionScreen';
 import { AvatarSelectionScreen } from '../screens/onboarding/AvatarSelectionScreen';
 import { NameScreen } from '../screens/onboarding/NameScreen';
+import { TutorialScreen } from '../screens/onboarding/TutorialScreen';
 import { ConnectPartnerScreen } from '../screens/partner/ConnectPartnerScreen';
-import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { AccountScreen } from '../screens/account/AccountScreen';
 import { RequestsScreen } from '../screens/requests/RequestsScreen';
 import { RewardsScreen } from '../screens/rewards/RewardsScreen';
@@ -42,7 +43,6 @@ import { BondRateScreen } from '../screens/bond/BondRateScreen';
 import { BondCollectionScreen } from '../screens/bond/BondCollectionScreen';
 import { MonthlySummaryScreen } from '../screens/bond/MonthlySummaryScreen';
 import { WishlistScreen } from '../screens/wishlist/WishlistScreen';
-import { MoodHistoryScreen } from '../screens/moods/MoodHistoryScreen';
 import { ComplimentsScreen } from '../screens/compliments/ComplimentsScreen';
 import { MomentsScreen } from '../screens/moments/MomentsScreen';
 import { ImportantDatesScreen } from '../screens/dates/ImportantDatesScreen';
@@ -103,7 +103,7 @@ export const RootNavigator = () => {
         <Stack.Screen name="Name" component={NameScreen} />
         <Stack.Screen name="ConnectPartner" component={ConnectPartnerScreen} />
         <Stack.Screen name="Main" component={MainTabNavigator} />
-        <Stack.Screen name="Settings" component={SettingsScreen} options={{ presentation: 'card' }} />
+        <Stack.Screen name="Tutorial" component={TutorialScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="Account" component={AccountScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="Requests" component={RequestsScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="Rewards" component={RewardsScreen} options={{ presentation: 'card' }} />
@@ -131,7 +131,6 @@ export const RootNavigator = () => {
         <Stack.Screen name="BondCollection" component={BondCollectionScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="MonthlySummary" component={MonthlySummaryScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="Wishlist" component={WishlistScreen} options={{ presentation: 'card' }} />
-        <Stack.Screen name="MoodHistory" component={MoodHistoryScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="Compliments" component={ComplimentsScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="Moments" component={MomentsScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="ImportantDates" component={ImportantDatesScreen} options={{ presentation: 'card' }} />
@@ -187,7 +186,8 @@ export const RootNavigator = () => {
         />
         <Stack.Screen name="Finance" component={FinanceScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="History" component={HistoryScreen} options={{ presentation: 'card' }} />
-        <Stack.Screen name="Profile" component={ProfileScreen} options={{ presentation: 'card' }} />
+        <Stack.Screen name="Add" component={AddActionScreen} options={{ presentation: 'card' }} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ presentation: 'card' }} />
         {__DEV__ && (
           <Stack.Screen name="NotificationTest" component={NotificationTestScreen} options={{ presentation: 'card' }} />
         )}

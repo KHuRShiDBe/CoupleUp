@@ -39,8 +39,10 @@ export const RARITY_ORDER: WishRarity[] = ['cheap', 'almostBreakeven', 'x1', 'x3
 
 // Blue metallic palette, cycled across the male wheel's 20 sectors.
 export const MALE_WHEEL_COLORS = ['#0B3D91', '#1565C0', '#1E88E5', '#64B5F6', '#0D47A1', '#3949AB'];
-// Pink/magenta glossy palette, cycled across the female wheel's 20 sectors.
-export const FEMALE_WHEEL_COLORS = ['#AD1457', '#E91E8C', '#F48FB1', '#9C4DCC', '#C2185B', '#F06292'];
+// Crimson/burgundy glossy palette, cycled across the female wheel's 20
+// sectors -- was a bright pink/magenta family (#E91E8C etc.), replaced to
+// match the app's dark crimson female theme (see theme/colors.ts).
+export const FEMALE_WHEEL_COLORS = ['#4A0E1F', '#C41E3A', '#8B1226', '#A31B32', '#6E1423', '#B3183A'];
 
 export const MALE_WISH_ITEMS: WishRouletteItem[] = [
   { key: 'm_tea_coffee', titleKey: 'm_tea_coffee', emoji: '☕', rarity: 'cheap', valueBond: 1, weight: 8 },

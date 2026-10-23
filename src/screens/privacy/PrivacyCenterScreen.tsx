@@ -7,6 +7,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { useAuth } from '../../store/AuthContext';
@@ -56,7 +57,8 @@ export const PrivacyCenterScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <ScreenHeader title="Центр приватности" onBack={() => navigation.goBack()} />
 
@@ -98,7 +100,7 @@ export const PrivacyCenterScreen = ({ navigation }: Props) => {
           </View>
         )}
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

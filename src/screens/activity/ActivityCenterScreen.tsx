@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { IconImage } from '../../components/common/IconImage';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -37,15 +38,17 @@ export const ActivityCenterScreen = ({ navigation }: Props) => {
 
   if (!configured) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={t('activityCenter.title')} onBack={() => navigation.goBack()} />
         <ErrorState message={t('activityCenter.notConfigured')} />
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('activityCenter.title')} onBack={() => navigation.goBack()} />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -78,8 +81,8 @@ export const ActivityCenterScreen = ({ navigation }: Props) => {
             onPress={() => !n.read && markRead(n.id)}
             style={[styles.row, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
-            <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
-              <IconImage name={ACTIVITY_ICON_BY_TYPE[n.type] ?? 'notification'} size={20} />
+            <View style={styles.iconWrap}>
+              <IconImage name={ACTIVITY_ICON_BY_TYPE[n.type] ?? 'notification'} size={24} />
             </View>
             <View style={styles.rowBody}>
               <Text style={[styles.rowTitle, { color: colors.text }]}>{n.title}</Text>
@@ -92,7 +95,7 @@ export const ActivityCenterScreen = ({ navigation }: Props) => {
           </Pressable>
         ))}
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -117,11 +120,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: spacing.md,
   },
   rowBody: {

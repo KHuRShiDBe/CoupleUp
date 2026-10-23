@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { useAuth } from '../../store/AuthContext';
 import { useCoupleSync } from '../../store/CoupleSyncContext';
@@ -121,10 +122,11 @@ export const FairSplitBody = () => {
 export const FairSplitScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('fairSplit.title')} onBack={() => navigation.goBack()} />
       <FairSplitBody />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

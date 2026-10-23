@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { Avatar } from '../../components/common/Avatar';
 import { IconImage } from '../../components/common/IconImage';
@@ -59,7 +60,8 @@ export const CoupleProfileScreen = ({ navigation }: Props) => {
   const cardBorderColor = deco.cardBorderColor ?? colors.border;
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <ScreenHeader title="Профиль пары" onBack={() => navigation.goBack()} />
 
@@ -278,7 +280,8 @@ export const CoupleProfileScreen = ({ navigation }: Props) => {
         />
         <PrimaryButton
           label="Настройки пары"
-          onPress={() => navigation.navigate('Settings')}
+          icon="settings"
+          onPress={() => navigation.navigate('Main', { screen: 'Settings' })}
           variant="outline"
           style={styles.settingsButton}
         />
@@ -346,7 +349,7 @@ export const CoupleProfileScreen = ({ navigation }: Props) => {
         }}
         onCancel={() => setConfirmDisconnectFinal(false)}
       />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

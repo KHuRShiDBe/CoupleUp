@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { SettingsRow } from '../../components/common/SettingsRow';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
@@ -21,7 +22,8 @@ export const AboutScreen = ({ navigation }: Props) => {
   const [legalDoc, setLegalDoc] = useState<'privacy' | 'terms' | null>(null);
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('settings.sectionAbout')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <Text style={[styles.intro, { color: colors.textSecondary }]}>{t('settings.aboutSubtitle')}</Text>
@@ -65,7 +67,7 @@ export const AboutScreen = ({ navigation }: Props) => {
           </View>
         </View>
       </Modal>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

@@ -11,7 +11,7 @@ const COUPLE_TABLES = [
   'goals',
   'reward_requests',
   'penalties',
-  'mood_checkins',
+  'user_moods',
   'daily_answers',
   'couple_moments',
   'important_dates',

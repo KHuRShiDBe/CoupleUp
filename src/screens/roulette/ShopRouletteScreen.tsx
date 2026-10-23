@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { BackendStatusBanner } from '../../components/common/BackendStatusBanner';
@@ -100,7 +101,8 @@ export const ShopRouletteScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('shopRoulette.title')} onBack={() => navigation.goBack()} />
       <Animated.ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {!!roulette.error && <BackendStatusBanner message={roulette.error} onRetry={roulette.clearError} />}
@@ -171,7 +173,7 @@ export const ShopRouletteScreen = ({ navigation }: Props) => {
           </View>
         </View>
       </Modal>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

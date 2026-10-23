@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { ErrorState } from '../../components/common/ErrorState';
@@ -51,7 +52,8 @@ export const ReportUserScreen = ({ navigation, route }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title="Пожаловаться" onBack={() => navigation.goBack()} />
 
       {!userId ? (
@@ -108,7 +110,7 @@ export const ReportUserScreen = ({ navigation, route }: Props) => {
           )}
         </View>
       )}
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

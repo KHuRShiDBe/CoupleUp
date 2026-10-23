@@ -33,7 +33,9 @@ export const listQuestBonusClaims = async (coupleId: string): Promise<DbQuestBon
 };
 
 // Returns false (no error) if this item was already completed for this
-// period/period_key -- see complete_quest_item in migration 0021.
+// period/period_key -- see complete_quest_item (migration 0021, points-award
+// half routed through a pending action_requests row as of migration 0038 --
+// the balance only moves once the partner approves it).
 export const completeQuestItem = async (input: {
   coupleId: string;
   period: QuestPeriod;

@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { IconImage } from '../../components/common/IconImage';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -56,15 +57,17 @@ export const AchievementsScreen = ({ navigation }: Props) => {
 
   if (loading) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={t('achievements.title')} onBack={() => navigation.goBack()} />
         <LoadingState />
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <ScreenHeader title={t('achievements.title')} onBack={() => navigation.goBack()} />
         {achievements.length === 0 && (
@@ -83,13 +86,12 @@ export const AchievementsScreen = ({ navigation }: Props) => {
               },
             ]}
           >
-            <View
-              style={[
-                styles.iconWrap,
-                { backgroundColor: item.unlocked ? colors.primary : colors.border },
-              ]}
-            >
-              <IconImage name={item.unlocked ? 'achievement' : 'lock'} size={26} />
+            <View style={styles.iconWrap}>
+              <IconImage
+                name={item.unlocked ? 'achievement' : 'lock'}
+                size={32}
+                color={item.unlocked ? undefined : colors.textSecondary}
+              />
             </View>
             <View style={styles.cardBody}>
               <Text style={[styles.cardTitle, { color: colors.text }]}>{t(`achievements.${item.id}` as TranslationKey)}</Text>
@@ -110,7 +112,7 @@ export const AchievementsScreen = ({ navigation }: Props) => {
           </View>
         ))}
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -127,11 +129,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   iconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: spacing.md,
   },
   cardBody: {

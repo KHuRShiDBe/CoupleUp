@@ -1,36 +1,31 @@
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import { ServiceError } from './errors';
-import { DbCoupleMoment, DbDailyAnswer, DbImportantDate, DbMoodCheckin, ImportantDateType, MoodValue } from '../../types/database';
+import { DbCoupleMoment, DbDailyAnswer, DbImportantDate, DbUserMood, ImportantDateType, MoodValue } from '../../types/database';
 
-// ---- Mood check-ins ---------------------------------------------------------
+// ---- Mood (one current value per user, migration 0039) ---------------------
 
-export const listMoodCheckins = async (coupleId: string, sinceDate: string): Promise<DbMoodCheckin[]> => {
+// Both partners' current mood -- at most 2 rows, no date range, no history.
+export const listUserMoods = async (coupleId: string): Promise<DbUserMood[]> => {
   if (!isSupabaseConfigured) return [];
-  const { data, error } = await supabase
-    .from('mood_checkins')
-    .select('*')
-    .eq('couple_id', coupleId)
-    .gte('checkin_date', sinceDate)
-    .order('checkin_date', { ascending: false });
+  const { data, error } = await supabase.from('user_moods').select('*').eq('couple_id', coupleId);
   if (error) throw new ServiceError(error.message);
-  return (data as DbMoodCheckin[]) ?? [];
+  return (data as DbUserMood[]) ?? [];
 };
 
-// One row per user per day (unique constraint) -- submitting again the same
-// day replaces that day's mood instead of erroring.
-export const submitMoodCheckin = async (coupleId: string, userId: string, mood: MoodValue): Promise<DbMoodCheckin> => {
+// Replaces the caller's current mood, however many times a day -- plain
+// upsert on the user_id primary key, no date dimension at all.
+export const setMyMood = async (coupleId: string, userId: string, mood: MoodValue): Promise<DbUserMood> => {
   if (!isSupabaseConfigured) throw new ServiceError('Backend не настроен', 'NOT_CONFIGURED');
-  const today = new Date().toISOString().slice(0, 10);
   const { data, error } = await supabase
-    .from('mood_checkins')
+    .from('user_moods')
     .upsert(
-      { couple_id: coupleId, user_id: userId, mood, checkin_date: today },
-      { onConflict: 'user_id,checkin_date' },
+      { user_id: userId, couple_id: coupleId, mood, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' },
     )
     .select()
     .single();
   if (error) throw new ServiceError(error.message);
-  return data as DbMoodCheckin;
+  return data as DbUserMood;
 };
 
 // ---- Daily answers (Question of the Day) ------------------------------------

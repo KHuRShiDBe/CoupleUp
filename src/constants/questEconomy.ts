@@ -28,13 +28,14 @@ export const QUEST_BASE_POINTS: Record<QuestPeriod, Record<QuestDifficulty, numb
 
 // Milestone bonuses -- daily AND weekly only (spec item 5: monthly/yearly get
 // no extra tiers beyond their normal per-item reward). Cumulative: 5th item
-// pays +20, 7th pays another +30 (50 total), 10th pays another +50 (100
-// total). Each stage is paid out at most once per (user, period, period_key)
-// -- see claim_quest_bonus in migration 0033.
+// pays +20, 7th pays another +30 (50 total), 15th (= all items done) pays
+// another +50 (100 total). Each stage is paid out at most once per (user,
+// period, period_key) and requires partner approval -- see claim_quest_bonus
+// in migrations 0033/0043.
 export const QUEST_BONUS_MILESTONES: { count: number; points: number }[] = [
   { count: 5, points: 20 },
   { count: 7, points: 30 },
-  { count: 10, points: 50 },
+  { count: 15, points: 50 },
 ];
 
 export const QUEST_BONUS_PERIODS: QuestPeriod[] = ['daily', 'weekly'];

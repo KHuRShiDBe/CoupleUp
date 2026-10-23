@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { useAuth } from '../../store/AuthContext';
@@ -43,12 +44,17 @@ export const CoupleRewardChestScreen = ({ navigation }: Props) => {
     haptics.success();
     const claimed = await progression.claimReward(key, points);
     if (claimed) {
-      await sync.addAction(t('rewardChest.rewardActionTitle'), points, auth.session.user.id);
+      // 'reward_chest' -- immediate, system-verified reward (not a
+      // self-reported action), so no partner approval needed; this type is
+      // also what keeps the generic "Новое доброе дело" notification from
+      // firing (notify_on_action_insert doesn't handle it, migration 0040).
+      await sync.addAction(t('rewardChest.rewardActionTitle'), points, auth.session.user.id, 'reward_chest');
     }
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('rewardChest.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('rewardChest.subtitle')}</Text>
@@ -73,7 +79,7 @@ export const CoupleRewardChestScreen = ({ navigation }: Props) => {
           );
         })}
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

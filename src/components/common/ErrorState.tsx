@@ -19,8 +19,8 @@ export const ErrorState = ({ title = 'Что-то пошло не так', messa
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, borderColor: colors.danger }]}>
-      <View style={[styles.iconWrap, { backgroundColor: colors.card }]}>
-        <IconImage name="notification" size={26} />
+      <View style={styles.iconWrap}>
+        <IconImage name="notification" size={36} color={colors.danger} />
       </View>
       <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
       <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
@@ -38,11 +38,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: spacing.md,
   },
   title: {

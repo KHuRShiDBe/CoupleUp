@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -125,15 +126,17 @@ export const TasksScreen = ({ navigation }: Props) => {
 
   if (!auth.configured) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={t('tasks.title')} onBack={() => navigation.goBack()} />
         <ErrorState message={t('activityCenter.notConfigured')} />
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('tasks.title')} onBack={() => navigation.goBack()} />
       {sync.loading && sync.tasks.length === 0 ? (
         <LoadingState />
@@ -219,7 +222,7 @@ export const TasksScreen = ({ navigation }: Props) => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

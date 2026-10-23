@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { Avatar } from '../../components/common/Avatar';
@@ -35,7 +36,8 @@ export const AvatarSelectionScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('avatarSelection.title')} onBack={() => navigation.goBack()} />
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('avatarSelection.subtitle')}</Text>
       <FlatList
@@ -51,7 +53,7 @@ export const AvatarSelectionScreen = ({ navigation }: Props) => {
         )}
       />
       <PrimaryButton label={t('avatarSelection.continue')} onPress={handleContinue} disabled={!selected} />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

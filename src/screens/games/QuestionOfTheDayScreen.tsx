@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { Avatar } from '../../components/common/Avatar';
@@ -32,7 +33,8 @@ export const QuestionOfTheDayScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('questionOfDay.title')} onBack={() => navigation.goBack()} />
       <View style={[styles.card, shadow.soft, { backgroundColor: colors.primary }]}>
         <Text style={[styles.question, { color: colors.textOnPrimary }]}>{dailyQuestion}</Text>
@@ -85,7 +87,7 @@ export const QuestionOfTheDayScreen = ({ navigation }: Props) => {
           </View>
         </View>
       )}
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

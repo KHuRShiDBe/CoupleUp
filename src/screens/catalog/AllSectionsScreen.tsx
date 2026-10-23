@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { QuickActionCard } from '../../components/cards/QuickActionCard';
 import { useTranslation } from '../../localization/useTranslation';
@@ -16,7 +17,8 @@ export const AllSectionsScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('hubs.allSectionsTitle')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <View style={styles.quickGrid}>
@@ -43,7 +45,6 @@ export const AllSectionsScreen = ({ navigation }: Props) => {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('hubs.groupMore')}</Text>
         <View style={styles.quickGrid}>
           <QuickActionCard label={t('reminders.title')} icon="notification" onPress={() => navigation.navigate('Reminders')} />
-          <QuickActionCard label={t('moodHistory.title')} icon="history" onPress={() => navigation.navigate('MoodHistory')} />
           <QuickActionCard label={t('wishlist.title')} icon="goal" onPress={() => navigation.navigate('Wishlist')} />
           <QuickActionCard label={t('purchaseRequests.title')} icon="lock" onPress={() => navigation.navigate('PurchaseRequests')} />
           <QuickActionCard label={t('themeStore.title')} icon="shop" onPress={() => navigation.navigate('ThemeStore')} />
@@ -52,7 +53,7 @@ export const AllSectionsScreen = ({ navigation }: Props) => {
           <QuickActionCard label={t('bond.rateTitle')} icon="history" onPress={() => navigation.navigate('BondRate')} />
         </View>
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

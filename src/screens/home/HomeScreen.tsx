@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainTabParamList } from '../../navigation/types';
 import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
+import { iconColors } from '../../theme/iconColors';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
-import { maleHomeDark } from '../../theme/maleHomeDark';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { Avatar } from '../../components/common/Avatar';
+import { IconImage } from '../../components/common/IconImage';
+import { Badge } from '../../components/common/Badge';
 import { QuickActionCard } from '../../components/cards/QuickActionCard';
 import { LoadingState } from '../../components/common/LoadingState';
 import { useMockLoading } from '../../hooks/useMockLoading';
@@ -20,27 +22,17 @@ import { useAuth } from '../../store/AuthContext';
 import { useCoupleSync } from '../../store/CoupleSyncContext';
 import { useBond } from '../../store/BondContext';
 import { useCoupleInteraction } from '../../store/CoupleInteractionContext';
-import { useCoupleStats } from '../../store/useCoupleStats';
+import { useNotifications } from '../../store/NotificationsContext';
 import { useQuests } from '../../store/QuestsContext';
 import { useTranslation, TranslationKey } from '../../localization/useTranslation';
 import { haptics } from '../../utils/haptics';
 import { formatBond } from '../../utils/bond';
 import { MOOD_OPTIONS, MOOD_EMOJI, moodTranslationKey } from '../../utils/mood';
+import { computeQuestProgress } from '../../utils/questProgress';
+import { getPeriodKey } from '../../constants/questSelection';
 import { MoodValue } from '../../types/database';
 import { QuestPeriod } from '../../types/database';
-import { QUEST_BONUS_MILESTONES, QUEST_ITEMS_PER_PERIOD } from '../../constants/questEconomy';
-import { getPeriodKey } from '../../constants/questSelection';
-import { wishlistIcons } from '../../constants/wishlistIcons';
-
-// Reusing the existing roulette wheel artwork -- see RewardsScreen, which
-// uses the same file for the roulette entry points.
-const ROULETTE_ICON = require('../../../assets/roulette/intimate-roulette-icon.png');
-
-const SAVINGS_ICONS = {
-  // Swapped to the newer files -- old assets/savings/{male,female}-savings1.png kept on disk, unused.
-  male: require('../../../assets/png/male-savings1.png'),
-  female: require('../../../assets/png/female-savings1.png'),
-};
+import { IconName } from '../../types';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'Home'>,
@@ -56,69 +48,59 @@ const PERIOD_CARDS: { period: QuestPeriod; tabKey: TranslationKey; icon: 'period
   { period: 'daily', tabKey: 'quests.tabDaily', icon: 'periodDaily' },
 ];
 
-// Same size/shape as QuickActionCard (same grid), but takes a resolved
-// image source directly instead of an IconName -- QuickActionCard's
-// IconImage always renders the VIEWER's own role icon, which can't express
-// "show this card in the PARTNER's role color" for the wishes-of-partner
-// card below.
-const WishHomeCard = ({ label, iconSource, onPress }: { label: string; iconSource: any; onPress: () => void }) => {
-  const { colors, role } = useTheme();
-  // Local to HomeScreen only -- safe to branch by role here without
-  // affecting any other screen (see maleHomeDark.ts).
-  const dark = role === 'male';
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.wishCard,
-        shadow.soft,
-        {
-          backgroundColor: dark ? maleHomeDark.cardBg : colors.card,
-          borderColor: dark ? maleHomeDark.border : colors.border,
-          opacity: pressed ? 0.85 : 1,
-        },
-      ]}
-    >
-      <View style={[styles.wishIconWrap, { backgroundColor: dark ? maleHomeDark.cardBgAlt : colors.background }]}>
-        <Image source={iconSource} style={styles.wishIconImage} resizeMode="contain" />
-      </View>
-      <Text style={[styles.wishLabel, { color: dark ? maleHomeDark.textPrimary : colors.text }]} numberOfLines={2}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-};
+// One shared look for every action card on this screen (period card,
+// savings, both wishlist cards, roulette, agreements) -- same height,
+// border radius/width, padding, icon size, title size, centered icon+text,
+// same shadow. Passed as overrides into QuickActionCard's own cardStyle/
+// iconWrapStyle/labelStyle props (that component's base style already gives
+// everything else -- radius, border, padding, shadow -- for free); nothing
+// here is a per-card bespoke style.
+// marginBottom: 0 cancels QuickActionCard's own built-in marginBottom --
+// row spacing on Home is controlled entirely by the grid container's
+// rowGap below, so every row (not just some) gets the exact same gap.
+const HOME_CARD_STYLE = { height: 128, alignItems: 'center' as const, justifyContent: 'center' as const, marginBottom: 0 };
+const HOME_CARD_ICON_WRAP_STYLE = { alignItems: 'center' as const, marginBottom: spacing.sm };
+const HOME_CARD_LABEL_STYLE = { textAlign: 'center' as const };
 
 export const HomeScreen = ({ navigation }: Props) => {
   const { colors, role } = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const loading = useMockLoading();
   const { userName, selectedAvatar } = useAppStore();
   const auth = useAuth();
   const sync = useCoupleSync();
   const bond = useBond();
   const interaction = useCoupleInteraction();
-  const stats = useCoupleStats();
+  const { unreadCount } = useNotifications();
   const quests = useQuests();
   const [moodPickerOpen, setMoodPickerOpen] = useState(false);
+  // Tap-to-toggle display unit for each balance -- BOND is the default,
+  // points is the same balance shown via the existing bond rate (no new
+  // data, no recompute of the ledger itself). Independent per person so
+  // toggling mine doesn't affect the partner's display.
+  const [myBalanceUnit, setMyBalanceUnit] = useState<'bond' | 'points'>('bond');
+  const [partnerBalanceUnit, setPartnerBalanceUnit] = useState<'bond' | 'points'>('bond');
 
   const partnerRole = sync.partner?.role ?? (role === 'male' ? 'female' : 'male');
   const coupleId = sync.couple?.id ?? null;
+  const myId = auth.session?.user?.id ?? '';
 
-  const todayKey = getPeriodKey('daily');
-  const myId = auth.session?.user?.id;
-  // My own completions only -- progress/milestones are tracked separately
-  // per person (migration 0033), not combined for the couple.
-  const doneCount = quests.progress.filter(
-    (p) => p.period === 'daily' && p.period_key === todayKey && p.completed_by === myId,
-  ).length;
-  const nextMilestone = QUEST_BONUS_MILESTONES.find(
-    (m) => doneCount < m.count || !quests.bonusClaims.some((b) => b.user_id === myId && b.period === 'daily' && b.period_key === todayKey && b.milestone === m.count),
-  );
-
-  // Premium dark-navy Home treatment, male account only -- every other
-  // screen and the whole female theme are untouched (see maleHomeDark.ts).
-  const dark = role === 'male';
+  // Real today's daily-quest completion for the CURRENT user only -- same
+  // done/total definition RewardsScreen uses for whoever's signed in. A
+  // person's own quests are drawn from the OTHER role's themed pool (see
+  // questSelection.ts), so "my" pool uses partnerRole, not my own role.
+  const dailyPeriodKey = getPeriodKey('daily');
+  const myDailyProgress = computeQuestProgress({
+    period: 'daily',
+    periodKey: dailyPeriodKey,
+    coupleId: coupleId ?? '',
+    poolRole: partnerRole,
+    userId: myId,
+    progress: quests.progress,
+    customItems: quests.customItems,
+    hiddenItems: quests.hiddenItems,
+  });
 
   const handlePickMood = (mood: MoodValue) => {
     haptics.select();
@@ -138,138 +120,129 @@ export const HomeScreen = ({ navigation }: Props) => {
 
   return (
     <ScreenBackground>
-      <ScreenContainer inTabBar transparent>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <View style={styles.header}>
-          <View>
-            <Text style={[styles.greeting, { color: dark ? maleHomeDark.textSecondary : colors.textSecondary }]}>{t('home.greeting')}</Text>
-            <Text style={[styles.userName, { color: dark ? maleHomeDark.textPrimary : colors.text }]}>{userName}</Text>
-          </View>
-          <View style={styles.headerButtons}>
-            <Pressable
-              onPress={() => navigation.navigate('RouletteHub')}
-              hitSlop={6}
-              style={[
-                styles.settingsButton,
-                { backgroundColor: dark ? maleHomeDark.cardBg : colors.card, borderColor: dark ? maleHomeDark.border : colors.border },
-              ]}
-            >
-              <Image source={ROULETTE_ICON} style={styles.rouletteHeaderIcon} resizeMode="contain" />
+      {/* Edge-to-edge hero panel -- sits outside ScreenContainer's padded
+          content area so it spans full width and touches the top of the
+          screen (only the safe-area inset is reserved, via paddingTop, so it
+          doesn't sit under the status bar/notch). Not a floating card: no
+          margin, no border radius, no shadow. */}
+      <View style={[styles.heroSection, { paddingTop: insets.top + spacing.md, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+        <Pressable
+          onPress={() => navigation.navigate('Notifications')}
+          hitSlop={8}
+          style={[styles.notificationButton, { top: insets.top + spacing.sm }]}
+        >
+          <IconImage name="notification" size={24} color={iconColors[role].primary} />
+          {!!unreadCount && <Badge count={unreadCount} />}
+        </Pressable>
+        <View style={styles.pairRow}>
+          <View style={styles.pairPerson}>
+            <Avatar role={role} avatarId={selectedAvatar} photoUrl={auth.profile?.photo_url} size={48} />
+            <Text style={[styles.pairName, { color: colors.text }]} numberOfLines={1}>
+              {userName}
+            </Text>
+            <Pressable onPress={() => setMyBalanceUnit((u) => (u === 'bond' ? 'points' : 'bond'))} hitSlop={6}>
+              <Text style={[styles.pairPoints, { color: colors.primary }]}>
+                {myBalanceUnit === 'bond'
+                  ? t('home.bondSuffix', { bond: formatBond(bond.toBond(sync.myStats.balance)) })
+                  : t('home.pointsSuffix', { points: sync.myStats.balance })}
+              </Text>
+            </Pressable>
+            <Pressable onPress={() => setMoodPickerOpen(true)} hitSlop={6}>
+              <Text style={[styles.pairMood, { color: colors.textSecondary }]} numberOfLines={1}>
+                {t('home.moodLabel', {
+                  emoji: interaction.myMood ? MOOD_EMOJI[interaction.myMood] : '❔',
+                  label: interaction.myMood ? t(moodTranslationKey(interaction.myMood)) : t('home.moodNotSet'),
+                })}
+              </Text>
             </Pressable>
           </View>
+          <View style={styles.pairPerson}>
+            <Avatar role={partnerRole} avatarId={sync.partner?.selected_avatar ?? null} photoUrl={sync.partner?.photo_url} size={48} />
+            <Text style={[styles.pairName, { color: colors.text }]} numberOfLines={1}>
+              {sync.partner?.name ?? t('home.notConnected')}
+            </Text>
+            <Pressable onPress={() => setPartnerBalanceUnit((u) => (u === 'bond' ? 'points' : 'bond'))} hitSlop={6}>
+              <Text style={[styles.pairPoints, { color: colors.primary }]}>
+                {partnerBalanceUnit === 'bond'
+                  ? t('home.bondSuffix', { bond: formatBond(bond.toBond(sync.partnerStats.balance)) })
+                  : t('home.pointsSuffix', { points: sync.partnerStats.balance })}
+              </Text>
+            </Pressable>
+            <Text style={[styles.pairMood, { color: colors.textSecondary }]} numberOfLines={1}>
+              {t('home.moodLabel', {
+                emoji: interaction.partnerMood ? MOOD_EMOJI[interaction.partnerMood] : '❔',
+                label: interaction.partnerMood ? t(moodTranslationKey(interaction.partnerMood)) : t('home.moodNotSet'),
+              })}
+            </Text>
+          </View>
         </View>
+      </View>
 
-        {(() => {
-          const BalanceWrap = dark ? LinearGradient : View;
-          const balanceWrapProps = dark
-            ? {
-                colors: [maleHomeDark.cardBg, maleHomeDark.cardBgAlt] as [string, string],
-                start: { x: 0, y: 0 },
-                end: { x: 1, y: 1 },
-                style: [styles.balanceCard, shadow.soft, { borderWidth: 1, borderColor: maleHomeDark.border }],
-              }
-            : { style: [styles.balanceCard, shadow.soft, { backgroundColor: colors.primary }] };
-          return (
-            <BalanceWrap {...(balanceWrapProps as any)}>
-              <View style={styles.pairRow}>
-                <View style={styles.pairPerson}>
-                  <Avatar role={role} avatarId={selectedAvatar} photoUrl={auth.profile?.photo_url} size={48} />
-                  <Text style={[styles.pairName, { color: colors.textOnPrimary }]} numberOfLines={1}>
-                    {userName}
-                  </Text>
-                  <Text style={[styles.pairPoints, { color: colors.textOnPrimary }]}>
-                    {t('home.bondSuffix', { bond: formatBond(bond.toBond(sync.myStats.balance)) })}
-                  </Text>
-                </View>
-                <View style={styles.pairPerson}>
-                  <Avatar role={partnerRole} avatarId={sync.partner?.selected_avatar ?? null} photoUrl={sync.partner?.photo_url} size={48} />
-                  <Text style={[styles.pairName, { color: colors.textOnPrimary }]} numberOfLines={1}>
-                    {sync.partner?.name ?? t('home.notConnected')}
-                  </Text>
-                  <Text style={[styles.pairPoints, { color: colors.textOnPrimary }]}>
-                    {t('home.bondSuffix', { bond: formatBond(bond.toBond(sync.partnerStats.balance)) })}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.balanceRow}>
-                <Text style={[styles.balanceLabel, { color: colors.textOnPrimary }]}>{t('bond.rateTitle')}</Text>
-                <Text style={[styles.balanceValue, { color: colors.textOnPrimary }]}>
-                  {t('bond.rateLine', { points: bond.pointsPerBond })}
-                </Text>
-              </View>
-            </BalanceWrap>
-          );
-        })()}
-
-        <View
-          style={[
-            styles.todayCard,
-            shadow.soft,
-            { backgroundColor: dark ? maleHomeDark.cardBg : colors.card, borderColor: dark ? maleHomeDark.border : colors.border },
-          ]}
-        >
-          <Text style={[styles.todayProgress, { color: dark ? maleHomeDark.textPrimary : colors.text }]}>
-            {t('quests.progressLabel', { done: doneCount, total: QUEST_ITEMS_PER_PERIOD })}
-          </Text>
-          <Text style={[styles.todayStreak, { color: dark ? maleHomeDark.textSecondary : colors.textSecondary }]}>
-            {stats.currentStreak > 0 ? t('home.streak', { count: stats.currentStreak }) : t('home.streakEmpty')}
-          </Text>
-          <Text style={[styles.todayMilestone, { color: dark ? maleHomeDark.accent : colors.primary }]}>
-            {nextMilestone
-              ? t('home.nextMilestone', { count: nextMilestone.count, points: nextMilestone.points })
-              : t('home.allMilestonesDone')}
-          </Text>
-        </View>
-
-        <Pressable
-          onPress={() => setMoodPickerOpen(true)}
-          style={[
-            styles.moodRow,
-            shadow.soft,
-            { backgroundColor: dark ? maleHomeDark.cardBg : colors.card, borderColor: dark ? maleHomeDark.border : colors.border },
-          ]}
-        >
-          <Text style={[styles.moodLine, { color: dark ? maleHomeDark.textPrimary : colors.text }]}>
-            {t('home.myMoodRow', {
-              emoji: interaction.myMoodToday ? MOOD_EMOJI[interaction.myMoodToday] : '❔',
-              label: interaction.myMoodToday ? t(moodTranslationKey(interaction.myMoodToday)) : t('home.moodNotSet'),
-            })}
-          </Text>
-          <Text style={[styles.moodLine, { color: dark ? maleHomeDark.textSecondary : colors.textSecondary }]}>
-            {t('home.partnerMoodRow', {
-              emoji: interaction.partnerMoodToday ? MOOD_EMOJI[interaction.partnerMoodToday] : '❔',
-              label: interaction.partnerMoodToday ? t(moodTranslationKey(interaction.partnerMoodToday)) : t('home.moodNotSet'),
-            })}
-          </Text>
-        </Pressable>
-
-        <View style={styles.periodGrid}>
+      <ScreenContainer inTabBar transparent style={styles.mainContent}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        <View style={styles.cardGrid}>
           {PERIOD_CARDS.map((c) => (
             <QuickActionCard
               key={c.period}
               label={t(c.tabKey)}
               icon={c.icon}
               onPress={() => navigation.navigate('Rewards', { period: c.period })}
-              cardStyle={dark ? { backgroundColor: maleHomeDark.cardBg, borderColor: maleHomeDark.border } : undefined}
-              iconWrapStyle={dark ? { backgroundColor: maleHomeDark.cardBgAlt } : undefined}
-              labelStyle={dark ? { color: maleHomeDark.textPrimary } : undefined}
+              cardStyle={HOME_CARD_STYLE}
+              iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
+              labelStyle={HOME_CARD_LABEL_STYLE}
+              topLeftContent={
+                c.period === 'daily' ? (
+                  <Text style={[styles.dailyProgressLine, { color: colors.textSecondary }]} numberOfLines={1}>
+                    {myDailyProgress.done} из {myDailyProgress.total}
+                  </Text>
+                ) : undefined
+              }
             />
           ))}
-          <WishHomeCard
+          <QuickActionCard
             label={t('winnings.cardLabel')}
-            iconSource={SAVINGS_ICONS[role]}
+            icon="savings"
             onPress={() => navigation.navigate('Savings')}
+            cardStyle={HOME_CARD_STYLE}
+            iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
+            labelStyle={HOME_CARD_LABEL_STYLE}
           />
-          <WishHomeCard
+          <QuickActionCard
             label={t('home.myWishes')}
-            iconSource={wishlistIcons[role]}
+            icon="wishlist"
+            // Heart tint only, colored by the WISHLIST OWNER's own role --
+            // card background/border stay the same as every other card,
+            // only the icon color is owner-specific.
+            iconColor={iconColors[role].primary}
             onPress={() => navigation.navigate('Wishlist', { owner: 'me' })}
+            cardStyle={HOME_CARD_STYLE}
+            iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
+            labelStyle={HOME_CARD_LABEL_STYLE}
           />
-          <WishHomeCard
+          <QuickActionCard
             label={t('home.partnerWishes')}
-            iconSource={wishlistIcons[partnerRole]}
+            icon="partnerWishlist"
+            iconColor={iconColors[partnerRole].primary}
             onPress={() => navigation.navigate('Wishlist', { owner: 'partner' })}
+            cardStyle={HOME_CARD_STYLE}
+            iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
+            labelStyle={HOME_CARD_LABEL_STYLE}
+          />
+          <QuickActionCard
+            label={t('roulette.hubTitle')}
+            icon="roulette"
+            onPress={() => navigation.navigate('RouletteHub')}
+            cardStyle={HOME_CARD_STYLE}
+            iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
+            labelStyle={HOME_CARD_LABEL_STYLE}
+          />
+          <QuickActionCard
+            label={t('home.agreementsTitle')}
+            icon="tasks"
+            onPress={() => navigation.navigate('Add')}
+            cardStyle={HOME_CARD_STYLE}
+            iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
+            labelStyle={HOME_CARD_LABEL_STYLE}
           />
         </View>
       </ScrollView>
@@ -285,9 +258,9 @@ export const HomeScreen = ({ navigation }: Props) => {
                 style={[
                   styles.moodOption,
                   {
-                    borderColor: interaction.myMoodToday === mood ? colors.primary : colors.border,
-                    backgroundColor: interaction.myMoodToday === mood ? colors.background : 'transparent',
-                    borderWidth: interaction.myMoodToday === mood ? 2 : 1,
+                    borderColor: interaction.myMood === mood ? colors.primary : colors.border,
+                    backgroundColor: interaction.myMood === mood ? colors.background : 'transparent',
+                    borderWidth: interaction.myMood === mood ? 2 : 1,
                   },
                 ]}
               >
@@ -305,47 +278,34 @@ export const HomeScreen = ({ navigation }: Props) => {
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingBottom: spacing.xl,
+    // Same gap below the last card row as between the rows themselves
+    // (cardGrid's rowGap) -- so the bottom tab bar isn't set apart by a
+    // bigger gap than the rows have between each other.
+    paddingBottom: spacing.md,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.sm,
-    marginBottom: spacing.lg,
+  heroSection: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
   },
-  greeting: {
-    fontSize: fontSize.sm,
-  },
-  userName: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  settingsButton: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 1,
+  notificationButton: {
+    position: 'absolute',
+    right: spacing.lg,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
-  rouletteHeaderIcon: {
-    width: 34,
-    height: 34,
-  },
-  balanceCard: {
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
+  mainContent: {
+    // ScreenContainer's own top inset is already consumed by heroSection
+    // above (which reserves it itself) -- only a small breathing gap is
+    // needed here, not the full safe-area inset again.
+    paddingTop: spacing.md,
   },
   pairRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: spacing.md,
   },
   pairPerson: {
     alignItems: 'center',
@@ -361,88 +321,27 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginTop: 2,
   },
-  balanceRow: {
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.25)',
-    paddingTop: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  balanceLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
-    width: '100%',
-    opacity: 0.9,
-  },
-  balanceValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 26,
-    textAlign: 'center',
-    width: '100%',
-  },
-  todayCard: {
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    padding: spacing.md,
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  todayProgress: {
-    fontSize: fontSize.lg,
-    fontWeight: '800',
-  },
-  todayStreak: {
+  pairMood: {
     fontSize: fontSize.xs,
-    marginTop: 2,
-  },
-  todayMilestone: {
-    fontSize: fontSize.xs,
-    fontWeight: '700',
-    marginTop: spacing.xs,
-  },
-  moodRow: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  moodLine: {
-    fontSize: fontSize.sm,
     fontWeight: '600',
-    marginBottom: 2,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
-  periodGrid: {
+  // Single grid for every Home action card (period, savings, both wishlist
+  // cards, roulette, agreements) -- one 2-column layout, one rowGap for every
+  // row, no per-card/per-row margins. Columns stay evenly split via
+  // space-between (every card shares the same fixed width), so the
+  // horizontal gap is just as uniform as the vertical one.
+  cardGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    rowGap: spacing.md,
   },
-  // Same numbers as QuickActionCard's own styles -- keeps all four cards in
-  // the grid (2 period cards + these 2) pixel-identical in size and spacing.
-  wishCard: {
-    width: '47%',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  wishIconWrap: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  wishIconImage: {
-    width: 50,
-    height: 50,
-  },
-  wishLabel: {
-    fontSize: fontSize.sm,
-    lineHeight: fontSize.sm * 1.3,
-    fontWeight: '600',
+  dailyProgressLine: {
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    lineHeight: fontSize.xs * 1.3,
   },
   modalOverlay: {
     flex: 1,

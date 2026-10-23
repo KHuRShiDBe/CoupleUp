@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
@@ -54,7 +55,8 @@ export const DeleteAccountScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title="Удаление аккаунта" onBack={() => navigation.goBack()} />
 
       <Text style={[styles.warning, { color: colors.text }]}>
@@ -112,7 +114,7 @@ export const DeleteAccountScreen = ({ navigation }: Props) => {
         }}
         onCancel={() => setShowFirstConfirm(false)}
       />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

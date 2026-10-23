@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { IconImage } from '../../components/common/IconImage';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
@@ -44,22 +45,24 @@ export const SupportCoupleUpScreen = ({ navigation }: Props) => {
 
   if (thanked) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={t('support.title')} onBack={() => navigation.goBack()} />
         <View style={styles.thanksWrap}>
-          <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
-            <IconImage name="pair" size={40} />
+          <View style={styles.iconWrap}>
+            <IconImage name="pair" size={56} />
           </View>
           <Text style={[styles.thanksTitle, { color: colors.text }]}>{t('support.thanksTitle')}</Text>
           <Text style={[styles.thanksText, { color: colors.textSecondary }]}>{t('support.thanksText')}</Text>
           <PrimaryButton label={t('support.done')} onPress={() => navigation.goBack()} style={styles.doneButton} />
         </View>
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('support.title')} onBack={() => navigation.goBack()} />
       <Text style={[styles.title, { color: colors.text }]}>{t('support.title')}</Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('support.subtitle')}</Text>
@@ -108,7 +111,7 @@ export const SupportCoupleUpScreen = ({ navigation }: Props) => {
         onConfirm={handleConfirm}
         onCancel={() => setSelectedAmount(null)}
       />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -158,11 +161,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrap: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: spacing.lg,
   },
   thanksTitle: {

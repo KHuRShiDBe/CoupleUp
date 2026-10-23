@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { useAppStore } from '../../store/AppContext';
 import { useAuth } from '../../store/AuthContext';
@@ -41,7 +42,8 @@ export const LanguageSelectScreen = ({ navigation, route }: Props) => {
   };
 
   return (
-    <ScreenContainer style={isInitial ? styles.container : undefined}>
+    <ScreenBackground>
+    <ScreenContainer transparent style={isInitial ? styles.container : undefined}>
       {isInitial ? (
         <Text style={[styles.title, { color: colors.text }]}>{t('languageSelect.title')}</Text>
       ) : (
@@ -69,7 +71,7 @@ export const LanguageSelectScreen = ({ navigation, route }: Props) => {
           );
         })}
       </View>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

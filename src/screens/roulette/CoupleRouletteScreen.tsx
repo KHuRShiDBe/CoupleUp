@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { useTranslation, TranslationKey } from '../../localization/useTranslation';
@@ -72,7 +73,8 @@ export const CoupleRouletteScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('roulette.title')} onBack={() => navigation.goBack()} />
       <View style={styles.body}>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('roulette.subtitle')}</Text>
@@ -133,7 +135,7 @@ export const CoupleRouletteScreen = ({ navigation }: Props) => {
           </View>
         </View>
       </Modal>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

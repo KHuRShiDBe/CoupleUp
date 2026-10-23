@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { BackendStatusBanner } from '../../components/common/BackendStatusBanner';
@@ -64,12 +65,11 @@ export const ConnectPartnerScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('connectPartner.title')} onBack={handleBack} />
       <View style={styles.iconWrap}>
-        <View style={[styles.iconCircle, { backgroundColor: colors.background }]}>
-          <IconImage name="pair" size={48} />
-        </View>
+        <IconImage name="pair" size={64} />
       </View>
 
       {sync.error && <BackendStatusBanner message={sync.error} onRetry={sync.clearError} />}
@@ -126,7 +126,7 @@ export const ConnectPartnerScreen = ({ navigation }: Props) => {
           )}
         </>
       )}
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -135,13 +135,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.lg,
     marginBottom: spacing.lg,
-  },
-  iconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   subtitle: {
     fontSize: fontSize.md,

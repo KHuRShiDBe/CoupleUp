@@ -28,6 +28,14 @@ interface AuthContextValue {
   session: Session | null;
   profile: DbUser | null;
   loading: boolean;
+  // True only when `loading` turned false because the initial session
+  // restore hit SESSION_RESTORE_TIMEOUT_MS, not because it actually
+  // resolved -- the real getSession() call is still running in the
+  // background. `session` may still turn non-null later purely from that
+  // call (or the onAuthStateChange listener) finishing late; nothing here
+  // ever clears a session or signs the user out. Splash uses this to avoid
+  // treating "we don't know yet" as "definitely logged out".
+  sessionRestorePending: boolean;
   // True while the profile row for the current session is being fetched --
   // distinct from `loading`, which only covers session restore/signIn/signUp.
   // Splash needs this to avoid deciding "no profile" before the fetch resolves.
@@ -49,6 +57,11 @@ interface AuthContextValue {
   updateProfile: (input: ProfileUpdateInput) => Promise<void>;
 }
 
+// How long to wait on the initial session restore before giving up on it
+// blocking the UI (see the effect below for why this can otherwise take up
+// to 30s). Within the 3-5s range requested.
+const SESSION_RESTORE_TIMEOUT_MS = 4000;
+
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -61,6 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<DbUser | null>(null);
   const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [sessionRestorePending, setSessionRestorePending] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,10 +83,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
       return;
     }
-    authService.getSession().then((s) => {
-      setSession(s);
-      setLoading(false);
-    });
+    let settled = false;
+    // The SDK refreshes an expired cached token with its own exponential
+    // backoff retry on a retryable error (e.g. a transient Auth 502/Bad
+    // Gateway) for up to AUTO_REFRESH_TICK_DURATION_MS (30s in
+    // @supabase/auth-js), and getSession() awaits that whole thing. Splash
+    // must not block on it for that long: give the real call
+    // SESSION_RESTORE_TIMEOUT_MS, then stop waiting -- `sessionRestorePending`
+    // tells callers "unknown yet, not logged out" so they can fall back to a
+    // safe local decision instead of wrongly treating this as no session.
+    // The real call (and onAuthStateChange) keep running and still update
+    // `session` normally whenever they actually resolve; nothing here ever
+    // clears a session or signs the user out.
+    const timeoutId = setTimeout(() => {
+      if (!settled) {
+        setSessionRestorePending(true);
+        setLoading(false);
+      }
+    }, SESSION_RESTORE_TIMEOUT_MS);
+    authService
+      .getSession()
+      .then((s) => setSession(s))
+      .catch((e) => setError(friendlyMessage(toServiceError(e))))
+      .finally(() => {
+        settled = true;
+        clearTimeout(timeoutId);
+        setSessionRestorePending(false);
+        setLoading(false);
+      });
     return authService.onAuthStateChange(setSession);
   }, []);
 
@@ -106,6 +144,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       session,
       profile,
       loading,
+      sessionRestorePending,
       profileLoading,
       error,
       clearError: () => setError(null),
@@ -199,7 +238,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       },
     }),
-    [session, profile, loading, profileLoading, error],
+    [session, profile, loading, sessionRestorePending, profileLoading, error],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

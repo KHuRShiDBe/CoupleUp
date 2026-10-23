@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -68,15 +69,17 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
 
   if (!auth.configured) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={screenTitle} onBack={() => navigation.goBack()} />
         <ErrorState message={t('activityCenter.notConfigured')} />
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={screenTitle} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {!!wishlist.error && <BackendStatusBanner message={wishlist.error} onRetry={wishlist.clearError} />}
@@ -166,7 +169,7 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
           })
         )}
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

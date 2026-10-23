@@ -6,6 +6,7 @@ import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, spacing } from '../../theme/layout';
 import { logo } from '../../constants/assets';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { IconImage } from '../../components/common/IconImage';
 
@@ -25,7 +26,8 @@ export const AppIconScreen = ({ navigation }: Props) => {
   const [selected, setSelected] = useState<IconOptionId>('default');
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title="Иконка приложения" onBack={() => navigation.goBack()} />
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         Возможность сменить иконку приложения появится в одном из следующих обновлений. Пока это только превью.
@@ -45,7 +47,7 @@ export const AppIconScreen = ({ navigation }: Props) => {
                 {option.id === 'default' ? (
                   <Image source={logo} style={styles.logoImage} resizeMode="contain" />
                 ) : (
-                  <IconImage name="pair" size={28} style={option.id === 'minimal' ? undefined : styles.whiteIcon} />
+                  <IconImage name="pair" size={28} color={option.id === 'minimal' ? undefined : '#FFFFFF'} />
                 )}
               </View>
               <Text style={[styles.optionTitle, { color: colors.text }]}>{option.title}</Text>
@@ -53,7 +55,7 @@ export const AppIconScreen = ({ navigation }: Props) => {
           );
         })}
       </View>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -85,9 +87,6 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 56,
     height: 56,
-  },
-  whiteIcon: {
-    tintColor: '#FFFFFF',
   },
   optionTitle: {
     fontSize: fontSize.sm,

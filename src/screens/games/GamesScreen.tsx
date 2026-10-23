@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { IconImage } from '../../components/common/IconImage';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -57,15 +58,17 @@ export const GamesScreen = ({ navigation }: Props) => {
 
   if (loading) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={t('games.title')} onBack={() => navigation.goBack()} />
         <LoadingState />
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <ScreenHeader title={t('games.title')} onBack={() => navigation.goBack()} />
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('games.subtitle')}</Text>
@@ -76,8 +79,8 @@ export const GamesScreen = ({ navigation }: Props) => {
             onPress={() => game.onPress(navigation)}
             style={[styles.card, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
-            <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
-              <IconImage name={game.icon} size={24} />
+            <View style={styles.iconWrap}>
+              <IconImage name={game.icon} size={26} />
             </View>
             <View style={styles.cardBody}>
               <Text style={[styles.cardTitle, { color: colors.text }]}>{t(game.titleKey)}</Text>
@@ -110,7 +113,7 @@ export const GamesScreen = ({ navigation }: Props) => {
           ))
         )}
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -131,11 +134,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: spacing.md,
   },
   cardBody: {

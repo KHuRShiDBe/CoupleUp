@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { getNotificationPermissionStatusAsync } from '../../services/notifications/pushService';
@@ -41,7 +42,8 @@ export const DataPermissionsScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title="Данные и разрешения" onBack={() => navigation.goBack()} />
       <View style={styles.list}>
         <View style={[styles.row, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -82,7 +84,7 @@ export const DataPermissionsScreen = ({ navigation }: Props) => {
       </Text>
 
       <PrimaryButton label="Открыть настройки приложения" onPress={() => Linking.openSettings()} variant="outline" />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

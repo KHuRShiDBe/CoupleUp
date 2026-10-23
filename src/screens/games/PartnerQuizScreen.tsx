@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { ErrorState } from '../../components/common/ErrorState';
@@ -76,16 +77,18 @@ const PartnerQuizContent = ({ navigation, quizId }: Props & { quizId: QuizId }) 
 
   if (!auth.configured) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={title} onBack={() => navigation.goBack()} />
         <ErrorState message={t('activityCenter.notConfigured')} />
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   if (finished) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={title} onBack={() => navigation.goBack()} />
         <View style={styles.resultWrap}>
           <View style={[styles.resultCard, shadow.soft, { backgroundColor: colors.primary }]}>
@@ -101,12 +104,13 @@ const PartnerQuizContent = ({ navigation, quizId }: Props & { quizId: QuizId }) 
           </Text>
           <PrimaryButton label={t('partnerQuiz.done')} onPress={() => navigation.goBack()} style={styles.doneButton} />
         </View>
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={title} onBack={() => navigation.goBack()} />
       <Text style={[styles.progress, { color: colors.textSecondary }]}>
         {t('partnerQuiz.questionProgress', { current: index + 1, total: questions.length })}
@@ -146,7 +150,7 @@ const PartnerQuizContent = ({ navigation, quizId }: Props & { quizId: QuizId }) 
           style={styles.nextButton}
         />
       )}
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

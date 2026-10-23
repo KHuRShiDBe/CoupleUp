@@ -6,6 +6,7 @@ import { useTheme } from '../../theme/useTheme';
 import { getTheme } from '../../theme/colors';
 import { fontSize, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { RoleCard } from '../../components/cards/RoleCard';
@@ -39,7 +40,8 @@ export const RoleSelectionScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title="" onBack={() => navigation.goBack()} />
       <Text style={[styles.title, { color: colors.text }]}>{t('roleSelection.title')}</Text>
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('roleSelection.subtitle')}</Text>
@@ -65,7 +67,7 @@ export const RoleSelectionScreen = ({ navigation }: Props) => {
         disabled={!role}
         colorOverride={role ? { primary: getTheme(role).primary, textOnPrimary: getTheme(role).textOnPrimary } : undefined}
       />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

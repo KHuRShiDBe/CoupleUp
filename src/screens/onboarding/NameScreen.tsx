@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { BackendStatusBanner } from '../../components/common/BackendStatusBanner';
@@ -66,7 +67,8 @@ export const NameScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('name.title')} onBack={() => navigation.goBack()} />
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('name.subtitle')}</Text>
       {auth.error && <BackendStatusBanner message={auth.error} onRetry={auth.clearError} />}
@@ -87,7 +89,7 @@ export const NameScreen = ({ navigation }: Props) => {
       ) : (
         <PrimaryButton label={t('name.continue')} onPress={handleContinue} disabled={!isValid} />
       )}
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

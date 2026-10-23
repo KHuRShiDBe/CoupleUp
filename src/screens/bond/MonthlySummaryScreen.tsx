@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { StatCard } from '../../components/cards/StatCard';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -67,17 +68,19 @@ export const MonthlySummaryScreen = ({ navigation }: Props) => {
 
   if (!auth.configured) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={t('monthlySummary.title')} onBack={() => navigation.goBack()} />
         <ErrorState message={t('activityCenter.notConfigured')} />
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   const initialLoading = sync.loading || budget.loading || planning.loading;
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('monthlySummary.title')} onBack={() => navigation.goBack()} />
       {initialLoading ? (
         <LoadingState lines={4} />
@@ -121,7 +124,7 @@ export const MonthlySummaryScreen = ({ navigation }: Props) => {
           )}
         </ScrollView>
       )}
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

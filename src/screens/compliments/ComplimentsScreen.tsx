@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { useAuth } from '../../store/AuthContext';
 import { useCoupleSync } from '../../store/CoupleSyncContext';
@@ -40,7 +41,8 @@ export const ComplimentsScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('compliments.title')} onBack={() => navigation.goBack()} />
       <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('compliments.subtitle')}</Text>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -62,7 +64,7 @@ export const ComplimentsScreen = ({ navigation }: Props) => {
           <Text style={[styles.noPartner, { color: colors.textSecondary }]}>{t('compliments.noPartner')}</Text>
         )}
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

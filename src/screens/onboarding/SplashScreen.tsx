@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEventListener } from 'expo';
@@ -8,10 +8,12 @@ import { useAppStore } from '../../store/AppContext';
 import { useAuth } from '../../store/AuthContext';
 import { useCoupleSync } from '../../store/CoupleSyncContext';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
+import { useTheme } from '../../theme/useTheme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 
-type SimpleTarget = 'Main' | 'Welcome' | 'ConnectPartner';
+type SimpleTarget = 'Main' | 'Welcome' | 'ConnectPartner' | 'Tutorial';
 
 const INTRO_VIDEO = require('../../../assets/videos/coupleup-intro.mp4');
 // Ultimate safety net: if the video never fires playToEnd or an error event
@@ -20,7 +22,8 @@ const INTRO_VIDEO = require('../../../assets/videos/coupleup-intro.mp4');
 const VIDEO_FALLBACK_MS = 6000;
 
 export const SplashScreen = ({ navigation }: Props) => {
-  const { isReady, onboardingComplete, languageSelected, userName, selectedRole, selectedAvatar, language } =
+  const { colors } = useTheme();
+  const { isReady, onboardingComplete, tutorialComplete, languageSelected, userName, selectedRole, selectedAvatar, language } =
     useAppStore();
   const auth = useAuth();
   const sync = useCoupleSync();
@@ -66,15 +69,31 @@ export const SplashScreen = ({ navigation }: Props) => {
     // No backend configured at all: fall back to the old local-only gate
     // rather than being unable to reach the app.
     if (!auth.configured) {
-      setPendingAction(() => () => navigation.replace(onboardingComplete ? 'Main' : 'Welcome'));
+      const target: SimpleTarget = !onboardingComplete ? 'Welcome' : tutorialComplete ? 'Main' : 'Tutorial';
+      setPendingAction(() => () => navigation.replace(target));
       return;
     }
 
-    // A. Wait for Supabase session restore.
+    // A. Wait for Supabase session restore (bounded by
+    // SESSION_RESTORE_TIMEOUT_MS in AuthContext -- this never hangs here
+    // for the SDK's up-to-30s token-refresh retry).
     if (auth.loading) return;
 
     // B. No session -> onboarding starts at Welcome (Role/Avatar/Name/Auth).
+    // But if `loading` only cleared because the restore TIMED OUT (not
+    // because it actually finished), we don't yet know whether there's a
+    // real session -- it may just be slow. Treating that as "logged out"
+    // would wrongly bounce a returning user through onboarding, so fall
+    // back to the same local-flags guess used when there's no backend at
+    // all. The real session restore keeps running in the background and
+    // updates `auth.session` reactively whenever it actually resolves --
+    // nothing here signs anyone out or clears cached session data.
     if (!auth.session) {
+      if (auth.sessionRestorePending) {
+        const target: SimpleTarget = !onboardingComplete ? 'Welcome' : tutorialComplete ? 'Main' : 'Tutorial';
+        setPendingAction(() => () => navigation.replace(target));
+        return;
+      }
       setPendingAction(() => () => navigation.replace('Welcome'));
       return;
     }
@@ -97,16 +116,19 @@ export const SplashScreen = ({ navigation }: Props) => {
       return;
     }
 
-    // D/E. Profile loaded: couple decides Main vs ConnectPartner.
-    const target: SimpleTarget = sync.couple ? 'Main' : 'ConnectPartner';
+    // D/E. Profile loaded: couple decides Main vs ConnectPartner (and Main
+    // itself is gated behind the one-time tutorial, same as local-mode above).
+    const target: SimpleTarget = !sync.couple ? 'ConnectPartner' : tutorialComplete ? 'Main' : 'Tutorial';
     setPendingAction(() => () => navigation.replace(target));
   }, [
     isReady,
     languageSelected,
     onboardingComplete,
+    tutorialComplete,
     auth.configured,
     auth.loading,
     auth.session,
+    auth.sessionRestorePending,
     auth.profileLoading,
     auth.profile,
     sync.loading,
@@ -133,9 +155,18 @@ export const SplashScreen = ({ navigation }: Props) => {
     // view, which an absolutely-positioned child ignores. That's what lets
     // the video go fully edge-to-edge instead of sitting in a small centered
     // box: it fills the whole screen behind/through that padding.
-    <ScreenContainer padded={false} style={styles.container}>
-      <VideoView player={player} style={styles.video} nativeControls={false} contentFit="cover" />
-    </ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent padded={false} style={styles.container}>
+      {videoDone ? (
+        // Intro is over (or skipped via the fallback/error paths) -- show a
+        // normal loading spinner instead of leaving the last video frame on
+        // screen while the destination (auth/profile/couple) is still
+        // resolving. Still the same route; only what's rendered changes.
+        <ActivityIndicator size="large" color={colors.primary} style={styles.video} />
+      ) : (
+        <VideoView player={player} style={styles.video} nativeControls={false} contentFit="cover" />
+      )}
+    </ScreenContainer></ScreenBackground>
   );
 };
 

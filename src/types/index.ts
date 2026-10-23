@@ -11,6 +11,7 @@ export type IconName =
   | 'settings'
   | 'notification'
   | 'message'
+  | 'chat'
   | 'tasks'
   | 'achievement'
   | 'back'
@@ -21,7 +22,11 @@ export type IconName =
   | 'periodDaily'
   | 'periodWeekly'
   | 'periodMonthly'
-  | 'periodYearly';
+  | 'periodYearly'
+  | 'roulette'
+  | 'savings'
+  | 'wishlist'
+  | 'partnerWishlist';
 
 export interface ActionHistoryItem {
   id: string;
@@ -169,6 +174,7 @@ export type DecorationId = 'classic' | 'hearts' | 'stars' | 'minimal' | 'anniver
 export interface AppState {
   isReady: boolean;
   onboardingComplete: boolean;
+  tutorialComplete: boolean;
   selectedRole: Role | null;
   selectedAvatar: number | null;
   userName: string;
@@ -207,6 +213,7 @@ export interface AppActions {
   setAvatar: (avatarId: number) => void;
   setUserName: (name: string) => void;
   completeOnboarding: (patch?: Partial<Pick<AppState, 'userName'>>) => Promise<void>;
+  completeTutorial: () => Promise<void>;
   addAction: (title: string, points: number, authorRole?: Role) => void;
   requestReward: (reward: { id: string; title: string; cost: number }, message: string, rateSnapshot?: number) => void;
   // Custom or gift request -- cost/BOND/$ are computed by the caller from the

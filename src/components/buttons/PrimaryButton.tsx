@@ -1,7 +1,9 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, spacing } from '../../theme/layout';
+import { IconName } from '../../types';
+import { IconImage } from '../common/IconImage';
 
 interface Props {
   label: string;
@@ -11,9 +13,12 @@ interface Props {
   variant?: 'primary' | 'outline';
   style?: ViewStyle;
   colorOverride?: { primary: string; textOnPrimary: string };
+  // Optional leading icon -- every existing call site omits this and renders
+  // exactly as before (label only).
+  icon?: IconName;
 }
 
-export const PrimaryButton = ({ label, onPress, disabled, loading, variant = 'primary', style, colorOverride }: Props) => {
+export const PrimaryButton = ({ label, onPress, disabled, loading, variant = 'primary', style, colorOverride, icon }: Props) => {
   const { colors: themeColors } = useTheme();
   const colors = colorOverride ? { ...themeColors, ...colorOverride } : themeColors;
   const isOutline = variant === 'outline';
@@ -35,6 +40,13 @@ export const PrimaryButton = ({ label, onPress, disabled, loading, variant = 'pr
     >
       {loading ? (
         <ActivityIndicator color={isOutline ? colors.primary : colors.textOnPrimary} />
+      ) : icon ? (
+        <View style={styles.iconRow}>
+          <IconImage name={icon} size={30} style={styles.icon} />
+          <Text style={[styles.label, { color: isOutline ? colors.primary : colors.textOnPrimary }]} numberOfLines={2}>
+            {label}
+          </Text>
+        </View>
       ) : (
         <Text style={[styles.label, { color: isOutline ? colors.primary : colors.textOnPrimary }]} numberOfLines={2}>
           {label}
@@ -62,5 +74,13 @@ const styles = StyleSheet.create({
     lineHeight: fontSize.md * 1.3,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  iconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: {
+    marginRight: spacing.sm,
   },
 });

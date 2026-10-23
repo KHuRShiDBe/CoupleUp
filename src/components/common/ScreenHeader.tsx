@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../theme/useTheme';
-import { fontSize, radius, spacing } from '../../theme/layout';
+import { fontSize, spacing } from '../../theme/layout';
 import { IconImage } from './IconImage';
 
 interface Props {
@@ -15,12 +15,8 @@ export const ScreenHeader = ({ title, onBack }: Props) => {
   return (
     <View style={styles.row}>
       {onBack ? (
-        <Pressable
-          onPress={onBack}
-          hitSlop={8}
-          style={[styles.backButton, { backgroundColor: colors.card, borderColor: colors.border }]}
-        >
-          <IconImage name="back" size={30} />
+        <Pressable onPress={onBack} hitSlop={12} style={styles.backButton}>
+          <IconImage name="back" size={28} />
         </Pressable>
       ) : (
         <View style={styles.backButtonSpacer} />
@@ -41,8 +37,6 @@ const styles = StyleSheet.create({
   backButton: {
     width: 52,
     height: 52,
-    borderRadius: radius.round,
-    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

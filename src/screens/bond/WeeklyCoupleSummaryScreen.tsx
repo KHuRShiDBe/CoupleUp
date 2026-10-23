@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { StatCard } from '../../components/cards/StatCard';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -57,7 +58,8 @@ export const WeeklyCoupleSummaryScreen = ({ navigation }: Props) => {
   }, [sync.actionsList, sync.userId, sync.partner?.id, sync.tasks, interaction.dailyAnswers, interaction.moments]);
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('weeklySummary.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {!summary.hasData ? (
@@ -103,7 +105,7 @@ export const WeeklyCoupleSummaryScreen = ({ navigation }: Props) => {
           </>
         )}
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

@@ -6,6 +6,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { FilterTabs } from '../../components/common/FilterTabs';
@@ -33,7 +34,12 @@ interface DisplayQuest {
   key: string;
   title: string;
   points: number;
+  // Approved only (quest_progress row exists -- migration 0041 only creates
+  // one on approval, never on the initial "Отметить" tap).
   completed: boolean;
+  // A pending action_request exists for this exact item -- awaiting the
+  // partner's ✓/✕, not yet counted anywhere.
+  pending: boolean;
   difficulty?: QuestDifficulty;
   // Only standard (pool) items can be replaced -- custom ones (including
   // replacements themselves) have nothing left to swap out.
@@ -88,6 +94,26 @@ export const RewardsScreen = () => {
   const isCompleted = (itemKey: string) =>
     quests.progress.some((p) => p.period === period && p.period_key === periodKey && p.item_key === itemKey);
 
+  // Awaiting the partner's ✓/✕ -- a rejected request doesn't match (status
+  // moved off 'pending'), so "Отметить" becomes available again right away.
+  const isPending = (itemKey: string) =>
+    sync.actionRequests.some(
+      (ar) => ar.status === 'pending' && ar.period === period && ar.period_key === periodKey && ar.item_key === itemKey,
+    );
+
+  // Bonus claim (5/7/10) awaiting the partner's ✓/✕ -- claim_quest_bonus
+  // (migration 0043) no longer credits immediately, it creates a pending
+  // action_request like everything else.
+  const isBonusPending = (milestone: number) =>
+    sync.actionRequests.some(
+      (ar) =>
+        ar.status === 'pending' &&
+        ar.actor_user_id === myId &&
+        ar.period === period &&
+        ar.period_key === periodKey &&
+        ar.bonus_milestone === milestone,
+    );
+
   const displayQuests: DisplayQuest[] = useMemo(() => {
     // systemQuests already arrives sorted by tier (getQuestsFor) -- every
     // period is tiered now, no per-period branching needed.
@@ -96,6 +122,7 @@ export const RewardsScreen = () => {
       title: t(`quests.item_${item.titleKey}` as TranslationKey),
       points: QUEST_BASE_POINTS[period][item.difficulty],
       completed: isCompleted(item.id),
+      pending: isPending(item.id),
       difficulty: item.difficulty,
       isStandard: true,
     }));
@@ -104,11 +131,12 @@ export const RewardsScreen = () => {
       title: c.title,
       points: c.points,
       completed: isCompleted(c.item_key),
+      pending: isPending(c.item_key),
       isStandard: false,
     }));
     return [...fromSystem, ...fromCustom];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [systemQuests, customQuestsForPeriod, quests.progress, period]);
+  }, [systemQuests, customQuestsForPeriod, quests.progress, sync.actionRequests, period]);
 
   // Progress/milestones only ever apply to the 15 free slots for the current
   // period -- visible standard items plus whatever's replaced them. Genuine
@@ -133,7 +161,7 @@ export const RewardsScreen = () => {
   const progressFillWidth = progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
   const handleCompleteQuest = async (item: DisplayQuest) => {
-    if (item.completed) return;
+    if (item.completed || item.pending) return;
     haptics.success();
     await quests.completeItem(period, periodKey, item.key, item.title, item.points);
   };
@@ -172,24 +200,27 @@ export const RewardsScreen = () => {
 
   if (!auth.configured) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={t('rewards.title')} onBack={() => navigation.goBack()} />
         <ErrorState message={t('activityCenter.notConfigured')} />
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   if (sync.loading && sync.rewardRequests.length === 0 && !sync.couple) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={t('rewards.title')} onBack={() => navigation.goBack()} />
         <LoadingState />
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('rewards.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
       {!!sync.error && <BackendStatusBanner message={sync.error} onRetry={sync.clearError} />}
@@ -220,11 +251,12 @@ export const RewardsScreen = () => {
             const claimed = quests.bonusClaims.some(
               (b) => b.user_id === auth.session?.user?.id && b.period === period && b.period_key === periodKey && b.milestone === m.count,
             );
+            const pending = !claimed && isBonusPending(m.count);
             const reached = doneCount >= m.count;
             return (
               <Pressable
                 key={m.count}
-                disabled={!reached || claimed}
+                disabled={!reached || claimed || pending}
                 onPress={() => handleClaimMilestone(m.count, m.points)}
                 style={[
                   styles.milestonePill,
@@ -238,7 +270,8 @@ export const RewardsScreen = () => {
                   {m.count} → +{m.points}
                 </Text>
                 {claimed && <Text style={[styles.milestoneSub, { color: colors.textOnPrimary }]}>{t('quests.milestoneClaimed')}</Text>}
-                {reached && !claimed && (
+                {pending && <Text style={[styles.milestoneSub, { color: colors.textOnPrimary }]}>{t('quests.pendingApproval')}</Text>}
+                {reached && !claimed && !pending && (
                   <Text style={[styles.milestoneSub, { color: colors.textOnPrimary }]}>{t('quests.milestoneClaim')}</Text>
                 )}
               </Pressable>
@@ -257,7 +290,7 @@ export const RewardsScreen = () => {
             )}
             <Text style={[styles.questTitle, { color: colors.text }]}>{item.title}</Text>
             <Text style={[styles.questPoints, { color: colors.primary }]}>+{item.points}</Text>
-            {item.isStandard && !item.completed && (
+            {item.isStandard && !item.completed && !item.pending && (
               <Pressable onPress={() => openReplace(item)} hitSlop={6}>
                 <Text style={[styles.replaceLink, { color: colors.textSecondary }]}>{t('quests.replaceItem')}</Text>
               </Pressable>
@@ -267,6 +300,8 @@ export const RewardsScreen = () => {
             <View style={[styles.questDoneBadge, { backgroundColor: colors.success }]}>
               <Text style={styles.questDoneBadgeText}>✓</Text>
             </View>
+          ) : item.pending ? (
+            <Text style={[styles.questPendingLabel, { color: colors.textSecondary }]}>{t('quests.pendingApproval')}</Text>
           ) : (
             <PrimaryButton label={t('quests.markDone')} onPress={() => handleCompleteQuest(item)} style={styles.questButton} />
           )}
@@ -332,7 +367,7 @@ export const RewardsScreen = () => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -425,6 +460,12 @@ const styles = StyleSheet.create({
   questButton: {
     height: 40,
     paddingHorizontal: spacing.md,
+  },
+  questPendingLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    maxWidth: 90,
+    textAlign: 'right',
   },
   questDoneBadge: {
     width: 28,

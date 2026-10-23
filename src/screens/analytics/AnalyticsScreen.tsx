@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { FilterTabs } from '../../components/common/FilterTabs';
 import { useTranslation } from '../../localization/useTranslation';
@@ -23,12 +24,13 @@ export const AnalyticsScreen = ({ navigation }: Props) => {
   ];
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('hubs.analyticsTitle')} onBack={() => navigation.goBack()} />
       <FilterTabs options={tabs} value={tab} onChange={(key) => setTab(key as Tab)} />
       {tab === 'stats' && <CoupleStatsBody />}
       {tab === 'daily' && <DailyDigestBody />}
       {tab === 'weekly' && <WeeklyDigestBody />}
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };

@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { LoadingState } from '../../components/common/LoadingState';
@@ -65,17 +66,20 @@ export const PenaltiesScreen = ({ navigation }: Props) => {
 
   if (!auth.configured) {
     return (
-      <ScreenContainer>
-        <ScreenHeader title="Штрафы" onBack={() => navigation.goBack()} />
-        <ErrorState message={t('activityCenter.notConfigured')} />
-      </ScreenContainer>
+      <ScreenBackground>
+        <ScreenContainer transparent>
+          <ScreenHeader title="Штрафы" onBack={() => navigation.goBack()} />
+          <ErrorState message={t('activityCenter.notConfigured')} />
+        </ScreenContainer>
+      </ScreenBackground>
     );
   }
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       {sync.loading && sync.penalties.length === 0 ? (
-        <ScreenContainer>
+        <ScreenContainer transparent>
           <ScreenHeader title="Штрафы" onBack={() => navigation.goBack()} />
           <LoadingState />
         </ScreenContainer>
@@ -208,6 +212,7 @@ export const PenaltiesScreen = ({ navigation }: Props) => {
         </View>
       </Modal>
     </ScreenContainer>
+    </ScreenBackground>
   );
 };
 

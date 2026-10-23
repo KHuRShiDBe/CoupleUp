@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { ErrorState } from '../../components/common/ErrorState';
@@ -56,16 +57,18 @@ export const EitherOrScreen = ({ navigation }: Props) => {
 
   if (!auth.configured) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={title} onBack={() => navigation.goBack()} />
         <ErrorState message={t('activityCenter.notConfigured')} />
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   if (finished) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={title} onBack={() => navigation.goBack()} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
           <View style={[styles.resultCard, shadow.soft, { backgroundColor: colors.primary }]}>
@@ -98,12 +101,13 @@ export const EitherOrScreen = ({ navigation }: Props) => {
           })}
           <PrimaryButton label={t('partnerQuiz.done')} onPress={() => navigation.goBack()} style={styles.doneButton} />
         </ScrollView>
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={title} onBack={() => navigation.goBack()} />
       <Text style={[styles.progress, { color: colors.textSecondary }]}>
         {t('partnerQuiz.questionProgress', { current: index + 1, total: EITHER_OR_PAIRS.length })}
@@ -123,7 +127,7 @@ export const EitherOrScreen = ({ navigation }: Props) => {
           <Text style={[styles.optionText, { color: colors.text }]}>{pair[1]}</Text>
         </Pressable>
       </View>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

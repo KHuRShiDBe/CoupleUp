@@ -5,7 +5,7 @@ import { useCoupleSync } from './CoupleSyncContext';
 import * as interactionService from '../services/supabase/interactionService';
 import { subscribeToCoupleInteraction } from '../services/supabase/realtime';
 import { friendlyMessage, toServiceError } from '../services/supabase/errors';
-import { DbCoupleMoment, DbDailyAnswer, DbImportantDate, DbMoodCheckin, ImportantDateType, MoodValue } from '../types/database';
+import { DbCoupleMoment, DbDailyAnswer, DbImportantDate, DbUserMood, ImportantDateType, MoodValue } from '../types/database';
 
 const HISTORY_DAYS = 30;
 
@@ -21,9 +21,8 @@ interface CoupleInteractionValue {
   loading: boolean;
   error: string | null;
   clearError: () => void;
-  moodHistory: DbMoodCheckin[]; // last 30 days, both partners
-  myMoodToday: MoodValue | null;
-  partnerMoodToday: MoodValue | null;
+  myMood: MoodValue | null;
+  partnerMood: MoodValue | null;
   submitMood: (mood: MoodValue) => Promise<void>;
   dailyAnswers: DbDailyAnswer[]; // last 30 days, both partners
   myAnswerToday: string | null;
@@ -46,14 +45,14 @@ export const CoupleInteractionProvider = ({ children }: { children: React.ReactN
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [moodHistory, setMoodHistory] = useState<DbMoodCheckin[]>([]);
+  const [userMoods, setUserMoods] = useState<DbUserMood[]>([]);
   const [dailyAnswers, setDailyAnswers] = useState<DbDailyAnswer[]>([]);
   const [moments, setMoments] = useState<DbCoupleMoment[]>([]);
   const [importantDates, setImportantDates] = useState<DbImportantDate[]>([]);
 
   const refresh = useCallback(async () => {
     if (!isSupabaseConfigured || !coupleId) {
-      setMoodHistory([]);
+      setUserMoods([]);
       setDailyAnswers([]);
       setMoments([]);
       setImportantDates([]);
@@ -64,12 +63,12 @@ export const CoupleInteractionProvider = ({ children }: { children: React.ReactN
     try {
       const since = daysAgoIso(HISTORY_DAYS);
       const [moods, answers, momentsList, datesList] = await Promise.all([
-        interactionService.listMoodCheckins(coupleId, since),
+        interactionService.listUserMoods(coupleId),
         interactionService.listDailyAnswers(coupleId, since),
         interactionService.listMoments(coupleId),
         interactionService.listImportantDates(coupleId),
       ]);
-      setMoodHistory(moods);
+      setUserMoods(moods);
       setDailyAnswers(answers);
       setMoments(momentsList);
       setImportantDates(datesList);
@@ -95,9 +94,8 @@ export const CoupleInteractionProvider = ({ children }: { children: React.ReactN
   }, [coupleId, refresh]);
 
   const today = todayIso();
-  const myMoodToday = moodHistory.find((m) => m.user_id === userId && m.checkin_date === today)?.mood ?? null;
-  const partnerMoodToday =
-    moodHistory.find((m) => m.user_id === sync.partner?.id && m.checkin_date === today)?.mood ?? null;
+  const myMood = userMoods.find((m) => m.user_id === userId)?.mood ?? null;
+  const partnerMood = userMoods.find((m) => m.user_id === sync.partner?.id)?.mood ?? null;
   const myAnswerToday = dailyAnswers.find((a) => a.user_id === userId && a.question_date === today)?.answer ?? null;
   const partnerAnswerToday =
     dailyAnswers.find((a) => a.user_id === sync.partner?.id && a.question_date === today)?.answer ?? null;
@@ -107,15 +105,14 @@ export const CoupleInteractionProvider = ({ children }: { children: React.ReactN
       loading,
       error,
       clearError: () => setError(null),
-      moodHistory,
-      myMoodToday,
-      partnerMoodToday,
+      myMood,
+      partnerMood,
       submitMood: async (mood: MoodValue) => {
         if (!coupleId || !userId) return;
         setError(null);
         try {
-          const row = await interactionService.submitMoodCheckin(coupleId, userId, mood);
-          setMoodHistory((prev) => [row, ...prev.filter((m) => m.id !== row.id)]);
+          const row = await interactionService.setMyMood(coupleId, userId, mood);
+          setUserMoods((prev) => [row, ...prev.filter((m) => m.user_id !== row.user_id)]);
         } catch (e) {
           setError(friendlyMessage(toServiceError(e)));
         }
@@ -160,9 +157,8 @@ export const CoupleInteractionProvider = ({ children }: { children: React.ReactN
     [
       loading,
       error,
-      moodHistory,
-      myMoodToday,
-      partnerMoodToday,
+      myMood,
+      partnerMood,
       dailyAnswers,
       myAnswerToday,
       partnerAnswerToday,

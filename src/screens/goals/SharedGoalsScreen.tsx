@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { IconImage } from '../../components/common/IconImage';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
@@ -107,8 +108,8 @@ export const SharedGoalsBody = () => {
               return (
                 <View key={goal.id} style={[styles.card, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={styles.cardHeader}>
-                    <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
-                      <IconImage name="goal" size={24} />
+                    <View style={styles.iconWrap}>
+                      <IconImage name="goal" size={26} />
                     </View>
                     <View style={styles.cardHeaderText}>
                       <Text style={[styles.cardTitle, { color: colors.text }]}>{goal.title}</Text>
@@ -148,10 +149,11 @@ export const SharedGoalsBody = () => {
 export const SharedGoalsScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('goals.title')} onBack={() => navigation.goBack()} />
       <SharedGoalsBody />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -189,11 +191,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: spacing.md,
   },
   cardHeaderText: {

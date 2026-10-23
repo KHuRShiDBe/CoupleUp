@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { FilterTabs } from '../../components/common/FilterTabs';
@@ -39,7 +40,8 @@ export const DateWheelScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('dateWheel.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('dateWheel.subtitle')}</Text>
@@ -63,7 +65,7 @@ export const DateWheelScreen = ({ navigation }: Props) => {
         </View>
         <PrimaryButton label={picked ? t('dateWheel.pickAgain') : t('dateWheel.pick')} onPress={pickIdea} disabled={pool.length === 0} />
       </ScrollView>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

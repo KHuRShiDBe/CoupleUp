@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { scheduleLocalTestNotification } from '../../services/notifications/pushService';
@@ -22,7 +23,8 @@ export const NotificationTestScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title="Notification test (dev)" onBack={() => navigation.goBack()} />
       <View style={styles.list}>
         <PrimaryButton
@@ -46,7 +48,7 @@ export const NotificationTestScreen = ({ navigation }: Props) => {
           style={styles.button}
         />
       </View>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

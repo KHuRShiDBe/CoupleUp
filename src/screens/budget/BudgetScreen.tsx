@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { useBudget } from '../../store/BudgetContext';
@@ -110,10 +111,11 @@ export const BudgetBody = () => {
 export const BudgetScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('budget.title')} onBack={() => navigation.goBack()} />
       <BudgetBody />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

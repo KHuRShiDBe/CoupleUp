@@ -3,8 +3,11 @@ import { Animated, Easing, Modal, ScrollView, StyleSheet, Text, View, useWindowD
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
+import { femaleTheme } from '../../theme/colors';
+import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { BackendStatusBanner } from '../../components/common/BackendStatusBanner';
@@ -33,9 +36,13 @@ const SPIN_DURATION_MAX = 5000;
 const LABEL_WIDTH = 34;
 const LABEL_RADIUS_FRACTION = 0.74;
 
+// Male kept exactly as before (not touched). Female used to hardcode its own
+// hot-pink '#E91E8C'/'#FFEAF4' here, duplicating (and drifting from) the app
+// theme -- now reads straight from theme/colors.ts's femaleTheme instead, so
+// the balance/BOND card above the wheel matches the rest of the app.
 const GENDER_THEME: Record<Gender, { primary: string; textOnPrimary: string; soft: string }> = {
   male: { primary: '#1565C0', textOnPrimary: '#FFFFFF', soft: '#EAF3FF' },
-  female: { primary: '#E91E8C', textOnPrimary: '#FFFFFF', soft: '#FFEAF4' },
+  female: { primary: femaleTheme.primary, textOnPrimary: femaleTheme.textOnPrimary, soft: femaleTheme.card },
 };
 
 const RARITY_LABEL_KEY: Record<WishRarity, TranslationKey> = {
@@ -66,6 +73,7 @@ const wedgePath = (cx: number, cy: number, r: number, startDeg: number, endDeg: 
 };
 
 export const WishRouletteScreen = ({ navigation }: Props) => {
+  const { colors } = useTheme();
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const auth = useAuth();
@@ -159,7 +167,8 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('wishRoulette.title')} onBack={() => navigation.goBack()} />
 
       {!!wish.error && <BackendStatusBanner message={wish.error} onRetry={wish.clearError} />}
@@ -169,11 +178,11 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
           gender is never a manual choice, so exactly one wheel (this one,
           picked by the signed-in user's own profile.role) is ever rendered. */}
       <ScrollView key={gender} showsVerticalScrollIndicator={false} contentContainerStyle={styles.wheelScroll}>
-          <View style={[styles.infoCard, shadow.soft, { backgroundColor: theme.primary }]}>
-            <Text style={[styles.infoLine, { color: '#FFFFFF' }]}>
+          <View style={[styles.infoCard, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.infoLine, { color: colors.text }]}>
               {t('wishRoulette.spinCostLabel', { bond: WISH_ROULETTE_SPIN_COST_BOND })}
             </Text>
-            <Text style={[styles.infoLine, { color: '#FFFFFF', opacity: 0.9 }]}>
+            <Text style={[styles.infoLine, { color: colors.textSecondary }]}>
               {t('wishRoulette.balanceLabel', { bond: formatBond(bond.toBond(sync.myStats.balance)) })}
             </Text>
           </View>
@@ -218,12 +227,14 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
 
       <Modal visible={resultVisible} transparent animationType="fade" onRequestClose={() => setResultVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, shadow.soft]}>
-            <Text style={styles.modalTitle}>{t('wishRoulette.resultTitle')}</Text>
+          <View style={[styles.modalCard, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }]}>
+            <Text style={[styles.modalTitle, { color: colors.textSecondary }]}>{t('wishRoulette.resultTitle')}</Text>
             {!!resultItem && (
               <>
                 <Text style={styles.modalEmoji}>{resultItem.emoji}</Text>
-                <Text style={styles.modalItemTitle}>{t(`wishRoulette.item_${resultItem.titleKey}` as TranslationKey)}</Text>
+                <Text style={[styles.modalItemTitle, { color: colors.text }]}>
+                  {t(`wishRoulette.item_${resultItem.titleKey}` as TranslationKey)}
+                </Text>
                 <View style={[styles.rarityBadge, { backgroundColor: RARITY_BADGE_COLOR[resultItem.rarity] }]}>
                   <Text style={styles.rarityBadgeText}>{t(RARITY_LABEL_KEY[resultItem.rarity])}</Text>
                 </View>
@@ -234,11 +245,13 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
                     spin_wish_roulette); every non-x10 item is a wish, saved
                     to the inventory, never credited as BOND. */}
                 {resultItem.isCoupon ? (
-                  <Text style={styles.modalValue}>{t('wishRoulette.wonCoupon')}</Text>
+                  <Text style={[styles.modalValue, { color: colors.text }]}>{t('wishRoulette.wonCoupon')}</Text>
                 ) : resultItem.rarity === 'x10' ? (
-                  <Text style={styles.modalValue}>{t('wishRoulette.valueLabel', { bond: resultItem.valueBond })}</Text>
+                  <Text style={[styles.modalValue, { color: colors.text }]}>
+                    {t('wishRoulette.valueLabel', { bond: resultItem.valueBond })}
+                  </Text>
                 ) : (
-                  <Text style={styles.modalValue}>{t('wishRoulette.savedToInventory')}</Text>
+                  <Text style={[styles.modalValue, { color: colors.text }]}>{t('wishRoulette.savedToInventory')}</Text>
                 )}
               </>
             )}
@@ -249,7 +262,7 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
           </View>
         </View>
       </Modal>
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -261,6 +274,7 @@ const styles = StyleSheet.create({
   infoCard: {
     width: '100%',
     borderRadius: radius.xl,
+    borderWidth: 1,
     padding: spacing.md,
     alignItems: 'center',
     marginBottom: spacing.lg,
@@ -335,11 +349,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     padding: spacing.lg,
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
   },
   modalTitle: {
     fontSize: fontSize.sm,
-    color: '#7488A3',
     marginBottom: spacing.xs,
   },
   modalEmoji: {
@@ -350,7 +362,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: '800',
     textAlign: 'center',
-    color: '#1A2B3C',
     marginBottom: spacing.sm,
   },
   rarityBadge: {
@@ -367,7 +378,6 @@ const styles = StyleSheet.create({
   modalValue: {
     fontSize: fontSize.md,
     fontWeight: '700',
-    color: '#1A2B3C',
     marginBottom: spacing.lg,
   },
   modalButton: {

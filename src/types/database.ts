@@ -126,6 +126,40 @@ export interface DbPenalty {
   resolved_at: string | null;
 }
 
+// A quick "I did this" / "they did this for me" entry (AddActionScreen's
+// "quick" tab, migration 0037) -- pending until reviewer_user_id (always the
+// OTHER couple member, server-derived, regardless of who recipient_id
+// credits) approves or rejects it. Only on approval does a row land in
+// `actions`, which is what actually credits the balance (existing trigger,
+// unchanged).
+export type DbActionRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface DbActionRequest {
+  id: string;
+  couple_id: string;
+  actor_user_id: string;
+  reviewer_user_id: string;
+  recipient_id: string;
+  title: string;
+  points: number;
+  status: DbActionRequestStatus;
+  approved_by: string | null;
+  approved_at: string | null;
+  rejected_at: string | null;
+  // Set only for quest-originated requests (complete_quest_item, migration
+  // 0041) -- null for AddActionScreen's "quick" tab. Lets respond_action_request
+  // know which quest_progress row to create on approval, and lets the client
+  // show "Ждёт подтверждения" on the matching quest item while pending.
+  period: QuestPeriod | null;
+  period_key: string | null;
+  item_key: string | null;
+  // Set only for bonus-claim requests (claim_quest_bonus, migration 0043) --
+  // null for quest items and AddActionScreen's "quick" tab. Lets
+  // respond_action_request know to write quest_bonus_claims on approval.
+  bonus_milestone: number | null;
+  created_at: string;
+}
+
 // Global points-per-BOND exchange rate -- not couple-scoped, see migration
 // 0008. BOND is a display/denomination layer over points, not a new balance.
 export interface DbBondRate {
@@ -138,13 +172,13 @@ export interface DbBondRate {
 
 export type MoodValue = 'great' | 'good' | 'okay' | 'tired' | 'low';
 
-export interface DbMoodCheckin {
-  id: string;
-  couple_id: string;
+// One row per user, period -- no date/history (migration 0039). user_id is
+// the primary key, so there is never more than one row per person.
+export interface DbUserMood {
   user_id: string;
+  couple_id: string;
   mood: MoodValue;
-  checkin_date: string;
-  created_at: string;
+  updated_at: string;
 }
 
 export interface DbDailyAnswer {
@@ -419,7 +453,9 @@ export type DbNotificationType =
   | 'goal_completed'
   | 'purchase_request'
   | 'purchase_response'
-  | 'nudge';
+  | 'nudge'
+  | 'action_request'
+  | 'action_response';
 
 export interface DbNotification {
   id: string;
@@ -655,6 +691,15 @@ export interface DbShopRouletteResult {
   used_coupon: boolean;
   cost_points: number;
   created_at: string;
+}
+
+export interface DbChatMessage {
+  id: string;
+  couple_id: string;
+  sender_id: string;
+  text: string;
+  created_at: string;
+  read_at: string | null;
 }
 
 export type WishInventoryStatus = 'available' | 'pending_use' | 'used';

@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { LoadingState } from '../../components/common/LoadingState';
 import { ErrorState } from '../../components/common/ErrorState';
@@ -200,10 +201,11 @@ export const DailyCalendarBody = () => {
 export const DailyCalendarScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('dailyCalendar.title')} onBack={() => navigation.goBack()} />
       <DailyCalendarBody />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

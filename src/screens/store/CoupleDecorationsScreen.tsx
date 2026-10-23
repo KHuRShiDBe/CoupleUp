@@ -6,6 +6,7 @@ import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { DECORATION_IDS, DECORATIONS } from '../../constants/decorations';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PurchaseModal } from '../../components/common/PurchaseModal';
 import { useAppStore } from '../../store/AppContext';
@@ -38,7 +39,8 @@ export const CoupleDecorationsScreen = ({ navigation }: Props) => {
   const targetMeta = purchaseTarget ? DECORATIONS[purchaseTarget] : null;
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <ScreenHeader title="Оформление пары" onBack={() => navigation.goBack()} />
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
@@ -107,7 +109,7 @@ export const CoupleDecorationsScreen = ({ navigation }: Props) => {
         onConfirm={handlePurchaseConfirm}
         onCancel={() => setPurchaseTarget(null)}
       />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

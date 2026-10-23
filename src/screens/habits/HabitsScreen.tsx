@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { IconImage } from '../../components/common/IconImage';
@@ -109,8 +110,8 @@ export const HabitsBody = () => {
             return (
               <View key={habit.id} style={[styles.card, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.cardHeader}>
-                  <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
-                    <IconImage name="goal" size={22} />
+                  <View style={styles.iconWrap}>
+                    <IconImage name="goal" size={24} />
                   </View>
                   <View style={styles.cardHeaderText}>
                     <Text style={[styles.cardTitle, { color: colors.text }]}>{habit.title}</Text>
@@ -154,10 +155,11 @@ export const HabitsBody = () => {
 export const HabitsScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('habits.title')} onBack={() => navigation.goBack()} />
       <HabitsBody />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -205,11 +207,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: spacing.sm,
   },
   cardHeaderText: {

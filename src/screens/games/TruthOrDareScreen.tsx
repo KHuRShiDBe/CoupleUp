@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { ErrorState } from '../../components/common/ErrorState';
@@ -47,16 +48,18 @@ export const TruthOrDareScreen = ({ navigation }: Props) => {
 
   if (!auth.configured) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={title} onBack={() => navigation.goBack()} />
         <ErrorState message={t('activityCenter.notConfigured')} />
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   if (finished) {
     return (
-      <ScreenContainer>
+      <ScreenBackground>
+      <ScreenContainer transparent>
         <ScreenHeader title={title} onBack={() => navigation.goBack()} />
         <View style={styles.resultWrap}>
           <View style={[styles.resultCard, shadow.soft, { backgroundColor: colors.primary }]}>
@@ -67,12 +70,13 @@ export const TruthOrDareScreen = ({ navigation }: Props) => {
           </View>
           <PrimaryButton label={t('partnerQuiz.done')} onPress={() => navigation.goBack()} style={styles.doneButton} />
         </View>
-      </ScreenContainer>
+      </ScreenContainer></ScreenBackground>
     );
   }
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={title} onBack={() => navigation.goBack()} />
       {!!games.error && <BackendStatusBanner message={games.error} onRetry={games.clearError} />}
       <Text style={[styles.progress, { color: colors.textSecondary }]}>
@@ -92,7 +96,7 @@ export const TruthOrDareScreen = ({ navigation }: Props) => {
           <PrimaryButton label={round >= TOTAL_ROUNDS ? t('partnerQuiz.finish') : t('truthOrDare.nextRound')} onPress={handleNext} />
         </View>
       )}
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -88,10 +89,11 @@ export const MomentsBody = () => {
 export const MomentsScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('moments.title')} onBack={() => navigation.goBack()} />
       <MomentsBody />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

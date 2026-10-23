@@ -31,11 +31,12 @@ export interface CoupleRealtimeHandlers {
   onRewardRequestsChange?: () => void;
   onGoalsChange?: () => void;
   onPenaltiesChange?: () => void;
+  onActionRequestsChange?: () => void;
 }
 
 // Single entry point for every table the app keeps live-synced for one couple:
-// points/actions/tasks/reward_requests/goals/penalties. Returns an unsubscribe
-// function; a no-op when the backend isn't configured yet.
+// points/actions/tasks/reward_requests/goals/penalties/action_requests.
+// Returns an unsubscribe function; a no-op when the backend isn't configured yet.
 export const subscribeToCouple = (coupleId: string, handlers: CoupleRealtimeHandlers): (() => void) => {
   if (!isSupabaseConfigured) return () => {};
 
@@ -78,6 +79,11 @@ export const subscribeToCouple = (coupleId: string, handlers: CoupleRealtimeHand
       { event: '*', schema: 'public', table: 'penalties', filter: `couple_id=eq.${coupleId}` },
       () => handlers.onPenaltiesChange?.(),
     )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'action_requests', filter: `couple_id=eq.${coupleId}` },
+      () => handlers.onActionRequestsChange?.(),
+    )
     .subscribe();
 
   return () => {
@@ -106,7 +112,7 @@ export const subscribeToCoupleInteraction = (
     .channel(`couple-interaction-${coupleId}`)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'mood_checkins', filter: `couple_id=eq.${coupleId}` },
+      { event: '*', schema: 'public', table: 'user_moods', filter: `couple_id=eq.${coupleId}` },
       () => handlers.onMoodChange?.(),
     )
     .on(
@@ -531,14 +537,17 @@ export const subscribeToShopRoulette = (coupleId: string, handlers: ShopRoulette
 // "Мои накопления" -- one user's own wish_inventory rows (roulette
 // winnings + coupons). Filtered by owner_id, not couple_id, so a change to
 // the partner's winnings never triggers a refetch here.
-export const subscribeToSavings = (userId: string, onChange: () => void): (() => void) => {
+// Couple-wide (not owner-only) so a status change either partner makes --
+// requesting to use an item, or confirming/declining the other's request --
+// shows up on both phones without a manual refresh.
+export const subscribeToCoupleInventory = (coupleId: string, onChange: () => void): (() => void) => {
   if (!isSupabaseConfigured) return () => {};
 
   const channel = supabase
-    .channel(`savings-${userId}`)
+    .channel(`savings-${coupleId}`)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'wish_inventory', filter: `owner_id=eq.${userId}` },
+      { event: '*', schema: 'public', table: 'wish_inventory', filter: `couple_id=eq.${coupleId}` },
       () => onChange(),
     )
     .subscribe();
@@ -569,6 +578,25 @@ export const subscribeToCoupleOffers = (coupleId: string, handlers: CoupleOffers
       'postgres_changes',
       { event: '*', schema: 'public', table: 'couple_offer_counters', filter: `couple_id=eq.${coupleId}` },
       () => handlers.onCountersChange?.(),
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
+
+// Chat (migration 0035) -- one shared thread per couple. A single 'chat_messages'
+// listener covers both new incoming messages and read-receipt updates (event: '*').
+export const subscribeToChat = (coupleId: string, onChange: () => void): (() => void) => {
+  if (!isSupabaseConfigured) return () => {};
+
+  const channel = supabase
+    .channel(`chat-${coupleId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'chat_messages', filter: `couple_id=eq.${coupleId}` },
+      () => onChange(),
     )
     .subscribe();
 

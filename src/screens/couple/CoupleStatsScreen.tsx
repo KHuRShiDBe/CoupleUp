@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { StatCard } from '../../components/cards/StatCard';
 import { useCoupleSync } from '../../store/CoupleSyncContext';
@@ -87,10 +88,11 @@ export const CoupleStatsBody = () => {
 export const CoupleStatsScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('coupleStats.title')} onBack={() => navigation.goBack()} />
       <CoupleStatsBody />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

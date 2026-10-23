@@ -5,6 +5,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { useCoupleInteraction } from '../../store/CoupleInteractionContext';
@@ -147,10 +148,11 @@ export const CalendarBody = () => {
 export const CalendarScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <ScreenHeader title={t('calendar.title')} onBack={() => navigation.goBack()} />
       <CalendarBody />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 

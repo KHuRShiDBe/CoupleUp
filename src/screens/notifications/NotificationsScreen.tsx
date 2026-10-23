@@ -1,12 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import type { CompositeScreenProps } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { MainTabParamList, RootStackParamList } from '../../navigation/types';
+import { RootStackParamList } from '../../navigation/types';
 import { useTheme } from '../../theme/useTheme';
 import { fontSize, radius, shadow, spacing } from '../../theme/layout';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { IconImage } from '../../components/common/IconImage';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -19,7 +18,10 @@ import { useCoupleSync } from '../../store/CoupleSyncContext';
 import { useBudget } from '../../store/BudgetContext';
 import { useNotifications } from '../../store/NotificationsContext';
 import { IconName } from '../../types';
+import { DbActionRequest } from '../../types/database';
 import { TranslationKey, useTranslation } from '../../localization/useTranslation';
+import { formatRelativeTime } from '../../utils/date';
+import { haptics } from '../../utils/haptics';
 
 const CLOUD_ICON_BY_TYPE: Record<string, IconName> = {
   action: 'tasks',
@@ -30,12 +32,11 @@ const CLOUD_ICON_BY_TYPE: Record<string, IconName> = {
   penalty: 'lock',
   penalty_response: 'lock',
   goal: 'goal',
+  action_request: 'tasks',
+  action_response: 'tasks',
 };
 
-type Props = CompositeScreenProps<
-  BottomTabScreenProps<MainTabParamList, 'Notifications'>,
-  NativeStackScreenProps<RootStackParamList>
->;
+type Props = NativeStackScreenProps<RootStackParamList, 'Notifications'>;
 
 interface NotificationEntry {
   id: string;
@@ -51,12 +52,14 @@ export const NotificationsScreen = ({ navigation }: Props) => {
   const loading = useMockLoading();
   const { history, rewardRequests, penalties, completedTasks, sharedGoals, achievements, notificationPreferences } =
     useAppStore();
-  const { configured } = useAuth();
+  const { configured, session } = useAuth();
+  const myId = session?.user?.id;
   const sync = useCoupleSync();
   const budget = useBudget();
   // Requests (accept/decline reward requests, purchase requests, penalties)
-  // is a separate actionable queue, not part of this read-only feed -- this
-  // is its only remaining entry point now that Home's bell button is gone.
+  // is a separate actionable queue, not part of this read-only feed -- shown
+  // here as a banner since this screen (not the bottom tab bar) is now the
+  // only entry point into notifications, reached via Home's bell button.
   const pendingRequestsCount = sync.pendingRequestsCount + budget.purchaseRequests.filter((p) => p.status === 'pending').length;
   const {
     notifications: cloudNotifications,
@@ -67,6 +70,18 @@ export const NotificationsScreen = ({ navigation }: Props) => {
     markRead,
     markAllRead,
   } = useNotifications();
+
+  // Opening this screen is "I've seen my notifications" -- same rule Chat
+  // already uses for its own unread badge. Fires once on mount and again
+  // only when the list actually grows (a new one arrives via realtime while
+  // this screen is open), not on every render -- same ref-based guard as
+  // ChatScreen.tsx uses for its own markRead-on-open effect.
+  const markAllReadRef = useRef(markAllRead);
+  markAllReadRef.current = markAllRead;
+  useEffect(() => {
+    if (unreadCount > 0) markAllReadRef.current();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudNotifications.length]);
 
   const entries = useMemo<NotificationEntry[]>(() => {
     const list: NotificationEntry[] = [];
@@ -153,9 +168,27 @@ export const NotificationsScreen = ({ navigation }: Props) => {
     return list;
   }, [history, rewardRequests, penalties, completedTasks, sharedGoals, achievements, notificationPreferences, t]);
 
+  const respondToActionRequest = (id: string, accept: boolean) => {
+    haptics.success();
+    sync.respondActionRequest(id, accept);
+  };
+
+  const actionRequestStatusLabel = (ar: DbActionRequest): string => {
+    if (ar.status === 'approved') return t('notifications.actionRequestStatusApproved');
+    if (ar.status === 'rejected') return t('notifications.actionRequestStatusRejected');
+    return t('notifications.actionRequestStatusPending');
+  };
+
+  const actionRequestStatusColor = (ar: DbActionRequest): string => {
+    if (ar.status === 'approved') return colors.success;
+    if (ar.status === 'rejected') return colors.danger;
+    return colors.textSecondary;
+  };
+
   return (
-    <ScreenContainer inTabBar>
-      <ScreenHeader title={t('notifications.title')} />
+    <ScreenBackground>
+    <ScreenContainer transparent>
+      <ScreenHeader title={t('notifications.title')} onBack={() => navigation.goBack()} />
       {loading ? (
         <LoadingState />
       ) : (
@@ -190,24 +223,64 @@ export const NotificationsScreen = ({ navigation }: Props) => {
                       <Text style={[styles.markAllText, { color: colors.primary }]}>{t('notifications.markAllRead')}</Text>
                     </Pressable>
                   )}
-                  {cloudNotifications.map((n) => (
-                    <Pressable
-                      key={n.id}
-                      onPress={() => !n.read && markRead(n.id)}
-                      style={[styles.row, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}
-                    >
-                      <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
-                        <IconImage name={CLOUD_ICON_BY_TYPE[n.type] ?? 'notification'} size={20} />
-                      </View>
-                      <View style={styles.rowBody}>
-                        <Text style={[styles.rowTitle, { color: colors.text }]}>{n.title}</Text>
-                        <Text style={[styles.rowDescription, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {n.body}
-                        </Text>
-                      </View>
-                      {!n.read && <View style={[styles.unreadDot, { backgroundColor: colors.danger }]} />}
-                    </Pressable>
-                  ))}
+                  {cloudNotifications.map((n) => {
+                    // action_request/action_response carry an exact, live
+                    // entity_id into the already-synced action_requests list
+                    // -- cross-referencing it (rather than trusting the
+                    // notification's own frozen title/body for status) means
+                    // the ✓/✕ buttons and status line always reflect the
+                    // CURRENT state, not whatever it was the instant this
+                    // notification was created.
+                    const actionRequest =
+                      n.type === 'action_request' || n.type === 'action_response'
+                        ? sync.actionRequests.find((ar) => ar.id === n.entity_id)
+                        : undefined;
+                    const canRespond =
+                      n.type === 'action_request' && !!actionRequest && actionRequest.status === 'pending' && actionRequest.reviewer_user_id === myId;
+
+                    return (
+                      <Pressable
+                        key={n.id}
+                        onPress={() => !n.read && markRead(n.id)}
+                        style={[styles.row, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}
+                      >
+                        <View style={styles.iconWrap}>
+                          <IconImage name={CLOUD_ICON_BY_TYPE[n.type] ?? 'notification'} size={24} />
+                        </View>
+                        <View style={styles.rowBody}>
+                          <Text style={[styles.rowTitle, { color: colors.text }]}>{n.title}</Text>
+                          <Text style={[styles.rowDescription, { color: colors.textSecondary }]} numberOfLines={2}>
+                            {n.body}
+                          </Text>
+                          <View style={styles.rowMetaRow}>
+                            <Text style={[styles.rowTime, { color: colors.textSecondary }]}>{formatRelativeTime(n.created_at)}</Text>
+                            {!!actionRequest && (
+                              <Text style={[styles.rowStatus, { color: actionRequestStatusColor(actionRequest) }]}>
+                                {actionRequestStatusLabel(actionRequest)}
+                              </Text>
+                            )}
+                          </View>
+                          {canRespond && actionRequest && (
+                            <View style={styles.actionRequestButtons}>
+                              <Pressable
+                                onPress={() => respondToActionRequest(actionRequest.id, true)}
+                                style={[styles.actionRequestButton, { backgroundColor: colors.success }]}
+                              >
+                                <Text style={styles.actionRequestButtonText}>✓</Text>
+                              </Pressable>
+                              <Pressable
+                                onPress={() => respondToActionRequest(actionRequest.id, false)}
+                                style={[styles.actionRequestButton, { backgroundColor: colors.danger }]}
+                              >
+                                <Text style={styles.actionRequestButtonText}>✕</Text>
+                              </Pressable>
+                            </View>
+                          )}
+                        </View>
+                        {!n.read && <View style={[styles.unreadDot, { backgroundColor: colors.danger }]} />}
+                      </Pressable>
+                    );
+                  })}
                 </>
               )}
             </>
@@ -216,8 +289,8 @@ export const NotificationsScreen = ({ navigation }: Props) => {
           ) : (
             entries.map((entry) => (
               <View key={entry.id} style={[styles.row, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
-                  <IconImage name={entry.icon} size={20} />
+                <View style={styles.iconWrap}>
+                  <IconImage name={entry.icon} size={24} />
                 </View>
                 <View style={styles.rowBody}>
                   <Text style={[styles.rowTitle, { color: colors.text }]}>{entry.title}</Text>
@@ -231,7 +304,7 @@ export const NotificationsScreen = ({ navigation }: Props) => {
           )}
         </ScrollView>
       )}
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
@@ -266,11 +339,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: spacing.md,
   },
   rowBody: {
@@ -287,6 +355,36 @@ const styles = StyleSheet.create({
   date: {
     fontSize: fontSize.xs,
     marginLeft: spacing.sm,
+  },
+  rowMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  rowTime: {
+    fontSize: fontSize.xs,
+  },
+  rowStatus: {
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    marginLeft: spacing.sm,
+  },
+  actionRequestButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  actionRequestButton: {
+    width: 40,
+    height: 36,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionRequestButtonText: {
+    color: '#FFFFFF',
+    fontSize: fontSize.md,
+    fontWeight: '800',
   },
   markAllRow: {
     alignSelf: 'flex-end',

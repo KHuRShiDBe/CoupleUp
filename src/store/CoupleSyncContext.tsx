@@ -8,9 +8,10 @@ import * as rewardsService from '../services/supabase/rewardsService';
 import * as tasksService from '../services/supabase/tasksService';
 import * as goalsService from '../services/supabase/goalsService';
 import * as penaltiesService from '../services/supabase/penaltiesService';
+import * as actionRequestsService from '../services/supabase/actionRequestsService';
 import { subscribeToCouple } from '../services/supabase/realtime';
 import { friendlyMessage, toServiceError } from '../services/supabase/errors';
-import { DbAction, DbCouple, DbGoal, DbPenalty, DbRewardRequest, DbTask, DbUser } from '../types/database';
+import { DbAction, DbActionRequest, DbCouple, DbGoal, DbPenalty, DbRewardRequest, DbTask, DbUser } from '../types/database';
 import { TaskAssignee } from '../types';
 
 export interface PersonalPointsStats {
@@ -30,6 +31,7 @@ interface CoupleSyncValue {
   rewardRequests: DbRewardRequest[];
   goals: DbGoal[];
   penalties: DbPenalty[];
+  actionRequests: DbActionRequest[];
   pendingRequestsCount: number;
   // Per-user breakdown computed from actionsList (grouped by recipient_id) --
   // couple.points/earned_points/spent_points (from the DB trigger) remain the
@@ -46,7 +48,14 @@ interface CoupleSyncValue {
   // so callers that need to know whether the points actually landed (e.g.
   // AddActionScreen) can branch on the awaited result instead of racing
   // `error`'s own state-update timing.
-  addAction: (title: string, points: number, recipientId?: string, type?: 'action' | 'compliment') => Promise<boolean>;
+  addAction: (title: string, points: number, recipientId?: string, type?: 'action' | 'compliment' | 'reward_chest') => Promise<boolean>;
+  // Pending version of addAction -- used by AddActionScreen's "quick" tab:
+  // the OTHER couple member (never the author, regardless of who
+  // recipientId credits) must approve before any points are applied. See
+  // respondActionRequest. Resolves to false (friendly message in `error`)
+  // on failure, same pattern as addAction/requestReward.
+  createActionRequest: (title: string, points: number, recipientId: string) => Promise<boolean>;
+  respondActionRequest: (id: string, accept: boolean) => Promise<void>;
   completeTask: (taskId: string) => Promise<void>;
   createTask: (input: { title: string; description: string; points: number; assignee: TaskAssignee }) => Promise<void>;
   // Resolves to false (and leaves a friendly message in `error`) on failure --
@@ -77,16 +86,18 @@ export const CoupleSyncProvider = ({ children }: { children: React.ReactNode }) 
   const [rewardRequests, setRewardRequests] = useState<DbRewardRequest[]>([]);
   const [goals, setGoals] = useState<DbGoal[]>([]);
   const [penalties, setPenalties] = useState<DbPenalty[]>([]);
+  const [actionRequests, setActionRequests] = useState<DbActionRequest[]>([]);
 
   const loadCoupleData = useCallback(
     async (coupleId: string) => {
-      const [members, actions, tasksRes, rewardReqs, goalsRes, penaltiesRes] = await Promise.all([
+      const [members, actions, tasksRes, rewardReqs, goalsRes, penaltiesRes, actionRequestsRes] = await Promise.all([
         coupleService.getCoupleMembers(coupleId),
         actionsService.listActions(coupleId),
         tasksService.listTasks(coupleId),
         rewardsService.listRewardRequests(coupleId),
         goalsService.listGoals(coupleId),
         penaltiesService.listPenalties(coupleId),
+        actionRequestsService.listActionRequests(coupleId),
       ]);
 
       setActionsList(actions);
@@ -94,6 +105,7 @@ export const CoupleSyncProvider = ({ children }: { children: React.ReactNode }) 
       setRewardRequests(rewardReqs);
       setGoals(goalsRes);
       setPenalties(penaltiesRes);
+      setActionRequests(actionRequestsRes);
 
       const partnerId = members.map((m) => m.user_id).find((id) => id !== userId);
       setPartner(partnerId ? await coupleService.getUserById(partnerId) : null);
@@ -112,6 +124,7 @@ export const CoupleSyncProvider = ({ children }: { children: React.ReactNode }) 
       setRewardRequests([]);
       setGoals([]);
       setPenalties([]);
+      setActionRequests([]);
       setLoading(false);
       return;
     }
@@ -154,6 +167,7 @@ export const CoupleSyncProvider = ({ children }: { children: React.ReactNode }) 
       onRewardRequestsChange: () => loadCoupleData(coupleId),
       onGoalsChange: () => loadCoupleData(coupleId),
       onPenaltiesChange: () => loadCoupleData(coupleId),
+      onActionRequestsChange: () => loadCoupleData(coupleId),
     });
   }, [couple?.id, loadCoupleData]);
 
@@ -214,6 +228,7 @@ export const CoupleSyncProvider = ({ children }: { children: React.ReactNode }) 
       rewardRequests,
       goals,
       penalties,
+      actionRequests,
       pendingRequestsCount,
       clearError: () => setError(null),
       refresh,
@@ -240,12 +255,23 @@ export const CoupleSyncProvider = ({ children }: { children: React.ReactNode }) 
         setRewardRequests([]);
         setGoals([]);
         setPenalties([]);
+        setActionRequests([]);
         return true;
       },
-      addAction: async (title: string, points: number, recipientId?: string, type?: 'action' | 'compliment') => {
+      addAction: async (title: string, points: number, recipientId?: string, type?: 'action' | 'compliment' | 'reward_chest') => {
         if (!couple) return false;
         const result = await runAction(() => actionsService.applyAction(couple.id, title, points, recipientId, type));
         return result !== null;
+      },
+      createActionRequest: async (title: string, points: number, recipientId: string) => {
+        if (!couple || !userId) return false;
+        const result = await runAction(() =>
+          actionRequestsService.createActionRequest({ coupleId: couple.id, actorUserId: userId, recipientId, title, points }),
+        );
+        return result !== null;
+      },
+      respondActionRequest: async (id: string, accept: boolean) => {
+        await runAction(() => actionRequestsService.respondActionRequest(id, accept));
       },
       completeTask: async (taskId: string) => {
         await runAction(() => tasksService.completeTask(taskId));
@@ -298,6 +324,7 @@ export const CoupleSyncProvider = ({ children }: { children: React.ReactNode }) 
       rewardRequests,
       goals,
       penalties,
+      actionRequests,
       pendingRequestsCount,
       refresh,
       runAction,

@@ -1,3 +1,4 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
 import { PremiumThemeId } from '../types';
 import { QuestPeriod } from '../types/database';
 
@@ -9,8 +10,10 @@ export type RootStackParamList = {
   AvatarSelection: undefined;
   Name: undefined;
   ConnectPartner: undefined;
-  Main: undefined;
-  Settings: undefined;
+  // Optional nested-tab target -- e.g. navigate('Main', { screen: 'Settings' })
+  // from a root-stack screen (Profile, CoupleProfile) to land on a specific
+  // tab, since Chat/Settings moved from root-stack screens into tabs.
+  Main: NavigatorScreenParams<MainTabParamList> | undefined;
   Account: undefined;
   Requests: undefined;
   CoupleProfile: undefined;
@@ -38,7 +41,6 @@ export type RootStackParamList = {
   BondCollection: undefined;
   Wishlist: { owner?: 'me' | 'partner' } | undefined;
   MonthlySummary: undefined;
-  MoodHistory: undefined;
   Compliments: undefined;
   Moments: undefined;
   ImportantDates: undefined;
@@ -92,14 +94,24 @@ export type RootStackParamList = {
   // Was a bottom tab -- still reached from Home's period quick-action cards,
   // now as a regular pushed screen (see RootNavigator).
   Rewards: { period?: QuestPeriod } | undefined;
-  // Was a bottom tab -- now reached from Settings ("История" / "Мой профиль"),
-  // as a regular pushed screen (see RootNavigator).
+  // Was a bottom tab -- now reached from Settings ("История"),
+  // as a regular pushed screen (see RootNavigator). Profile's own UI was
+  // merged directly into SettingsScreen -- no separate route anymore.
   History: undefined;
-  Profile: undefined;
+  // Was a bottom tab ("Договоры") -- now reached from Home's own "Договоры"
+  // card, as a regular pushed screen (see RootNavigator).
+  Add: undefined;
+  // Was a bottom tab -- now reached from Home's own bell button (top-right
+  // corner), as a regular pushed screen (see RootNavigator).
+  Notifications: undefined;
+  // `manual` distinguishes a first-run auto-show (Splash replaces to here,
+  // finishing replaces to Main) from a re-open from Settings (finishing just
+  // goes back) -- see TutorialScreen.
+  Tutorial: { manual?: boolean } | undefined;
 };
 
 export type MainTabParamList = {
   Home: undefined;
-  Add: undefined;
-  Notifications: undefined;
+  Chat: undefined;
+  Settings: undefined;
 };

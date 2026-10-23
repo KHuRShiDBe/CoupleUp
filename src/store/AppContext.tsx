@@ -39,6 +39,7 @@ const todayKey = () => new Date().toISOString().slice(0, 10);
 const initialState: AppState = {
   isReady: false,
   onboardingComplete: false,
+  tutorialComplete: false,
   selectedRole: null,
   selectedAvatar: null,
   userName: 'Ты',
@@ -75,6 +76,7 @@ const initialState: AppState = {
 type PersistedState = Pick<
   AppState,
   | 'onboardingComplete'
+  | 'tutorialComplete'
   | 'selectedRole'
   | 'selectedAvatar'
   | 'userName'
@@ -110,6 +112,7 @@ type PersistedState = Pick<
 
 const toPersistedState = (state: AppState): PersistedState => ({
   onboardingComplete: state.onboardingComplete,
+  tutorialComplete: state.tutorialComplete,
   selectedRole: state.selectedRole,
   selectedAvatar: state.selectedAvatar,
   userName: state.userName,
@@ -194,6 +197,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   }, [
     state.isReady,
     state.onboardingComplete,
+    state.tutorialComplete,
     state.selectedRole,
     state.selectedAvatar,
     state.userName,
@@ -287,6 +291,19 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
             // in-memory flag below still lets this session continue.
           }
           setState((prev) => ({ ...prev, ...patch, onboardingComplete: true }));
+        },
+        // Same persist-before-setState pattern as completeOnboarding above --
+        // a relaunch right after finishing the tutorial must never show it
+        // again. Re-opening from Settings calls this too (already-true is a
+        // harmless no-op) so it never resets the auto-show flag back off.
+        completeTutorial: async () => {
+          const next: AppState = { ...stateRef.current, tutorialComplete: true };
+          try {
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toPersistedState(next)));
+          } catch {
+            // Storage failure only costs persistence across relaunch.
+          }
+          setState((prev) => ({ ...prev, tutorialComplete: true }));
         },
         addAction: (title: string, points: number, authorRole?: Role) =>
           setState((prev) => {

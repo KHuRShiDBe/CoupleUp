@@ -8,6 +8,7 @@ import { fontSize, spacing } from '../../theme/layout';
 import { logo } from '../../constants/assets';
 import { PrimaryButton } from '../../components/buttons/PrimaryButton';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { ScreenBackground } from '../../components/common/ScreenBackground';
 import { useTranslation } from '../../localization/useTranslation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Welcome'>;
@@ -17,7 +18,8 @@ export const WelcomeScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
 
   return (
-    <ScreenContainer>
+    <ScreenBackground>
+    <ScreenContainer transparent>
       <View style={styles.content}>
         <View style={styles.logoWrap}>
           <View style={[styles.glow, styles.glowBlue, { backgroundColor: maleTheme.primary }]} />
@@ -28,7 +30,7 @@ export const WelcomeScreen = ({ navigation }: Props) => {
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{t('welcome.subtitle')}</Text>
       </View>
       <PrimaryButton label={t('welcome.start')} onPress={() => navigation.navigate('RoleSelection')} />
-    </ScreenContainer>
+    </ScreenContainer></ScreenBackground>
   );
 };
 
