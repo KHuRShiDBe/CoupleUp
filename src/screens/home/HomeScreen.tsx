@@ -124,8 +124,9 @@ export const HomeScreen = ({ navigation }: Props) => {
           content area so it spans full width and touches the top of the
           screen (only the safe-area inset is reserved, via paddingTop, so it
           doesn't sit under the status bar/notch). Not a floating card: no
-          margin, no border radius, no shadow. */}
-      <View style={[styles.heroSection, { paddingTop: insets.top + spacing.md, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          margin, no shadow -- only the bottom corners are rounded, matching
+          the cards below (radius.lg + 1px colors.border outline). */}
+      <View style={[styles.heroSection, { paddingTop: insets.top + spacing.md, backgroundColor: colors.card, borderColor: colors.border }]}>
         <Pressable
           onPress={() => navigation.navigate('Notifications')}
           hitSlop={8}
@@ -286,7 +287,13 @@ const styles = StyleSheet.create({
   heroSection: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
-    borderBottomWidth: 1,
+    // Same corner radius and 1px outline as the Home cards (QuickActionCard),
+    // drawn on the sides and bottom only so the outline follows the rounded
+    // corners; the top edge stays flush with the screen.
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
   },
   notificationButton: {
     position: 'absolute',
