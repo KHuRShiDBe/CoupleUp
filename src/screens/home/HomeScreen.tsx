@@ -33,6 +33,7 @@ import { getPeriodKey } from '../../constants/questSelection';
 import { MoodValue } from '../../types/database';
 import { QuestPeriod } from '../../types/database';
 import { IconName } from '../../types';
+import { useAvailablePrizeCount } from '../../hooks/useAvailablePrizeCount';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<MainTabParamList, 'Home'>,
@@ -70,6 +71,7 @@ export const HomeScreen = ({ navigation }: Props) => {
   const { userName, selectedAvatar } = useAppStore();
   const auth = useAuth();
   const sync = useCoupleSync();
+  const availablePrizes = useAvailablePrizeCount();
   const bond = useBond();
   const interaction = useCoupleInteraction();
   const { unreadCount } = useNotifications();
@@ -204,6 +206,13 @@ export const HomeScreen = ({ navigation }: Props) => {
             label={t('winnings.cardLabel')}
             icon="savings"
             onPress={() => navigation.navigate('Savings')}
+            topLeftContent={
+              availablePrizes > 0 ? (
+                <View style={[styles.prizeCounter, { backgroundColor: colors.primary }]}>
+                  <Text style={[styles.prizeCounterText, { color: colors.textOnPrimary }]}>🎁 {availablePrizes}</Text>
+                </View>
+              ) : undefined
+            }
             cardStyle={HOME_CARD_STYLE}
             iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
             labelStyle={HOME_CARD_LABEL_STYLE}
@@ -344,6 +353,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: spacing.md,
+  },
+  prizeCounter: {
+    borderRadius: radius.round,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+  },
+  prizeCounterText: {
+    fontSize: fontSize.xs,
+    fontWeight: '800',
   },
   dailyProgressLine: {
     fontSize: fontSize.xs,

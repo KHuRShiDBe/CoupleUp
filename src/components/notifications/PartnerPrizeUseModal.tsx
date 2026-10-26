@@ -82,6 +82,7 @@ export const PartnerPrizeUseModal = () => {
       <View style={styles.overlay}>
         <View style={[styles.card, shadow.soft, { backgroundColor: colors.card, borderColor: colors.primary }]}>
           <Text style={styles.emoji}>🎁</Text>
+          <Text style={[styles.important, { color: colors.danger }]}>{t('winnings.partnerUsedImportant')}</Text>
           <Text style={[styles.title, { color: colors.textSecondary }]}>{t('winnings.partnerUsedTitle')}</Text>
           {!!current && (
             <Text style={[styles.prize, { color: colors.text }]}>{resolveItemTitle(current.item_key, t)}</Text>
@@ -112,6 +113,12 @@ const styles = StyleSheet.create({
     fontSize: 48,
     marginBottom: spacing.sm,
   },
+  important: {
+    fontSize: fontSize.xl,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+  },
   title: {
     fontSize: fontSize.md,
     fontWeight: '600',
@@ -126,5 +133,6 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
+    minHeight: 56,
   },
 });

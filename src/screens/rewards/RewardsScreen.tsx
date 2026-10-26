@@ -22,7 +22,7 @@ import { QuestPeriod } from '../../types/database';
 import {
   QuestDifficulty,
   QUEST_BASE_POINTS,
-  QUEST_BONUS_MILESTONES,
+  QUEST_BONUS_MILESTONES_BY_PERIOD,
   QUEST_BONUS_PERIODS,
   nextCustomQuestPrice,
 } from '../../constants/questEconomy';
@@ -244,7 +244,7 @@ export const RewardsScreen = () => {
 
       {QUEST_BONUS_PERIODS.includes(period) && (
         <View style={styles.milestoneRow}>
-          {QUEST_BONUS_MILESTONES.map((m) => {
+          {(QUEST_BONUS_MILESTONES_BY_PERIOD[period] ?? []).map((m) => {
             // Filtered to MY OWN claims -- bonusClaims holds both partners'
             // rows for the couple, and progress/bonuses are tracked
             // separately per person (migration 0033).

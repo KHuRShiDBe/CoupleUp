@@ -1,44 +1,38 @@
 import { QuestPoolItem } from './types';
 
-// Separate content per partner role -- these are recommendation templates,
-// not "duties assigned by gender". 15 items each, 5 easy + 5 medium + 5 hard
-// (see questEconomy.ts) -- the full pool IS the day's list now, no rotation.
+// Separate content per partner role -- recommendation templates, not
+// "duties assigned by gender". 10 items each: 3 easy + 3 medium + 3 hard +
+// 1 very hard (see questEconomy.ts). The two lists differ in wording and
+// content but match tier for tier in effort (e.g. cooking dinner for two ~
+// organising a cosy evening; a small gift ~ a small gift/treat).
 export const MALE_DAILY_POOL: QuestPoolItem[] = [
-  { id: 'm_say_love_you', difficulty: 'easy', titleKey: 'm_say_love_you' },
-  { id: 'm_compliment', difficulty: 'easy', titleKey: 'm_compliment' },
-  { id: 'm_good_morning', difficulty: 'easy', titleKey: 'm_good_morning' },
-  { id: 'm_thanks', difficulty: 'easy', titleKey: 'm_thanks' },
-  { id: 'm_hug', difficulty: 'easy', titleKey: 'm_hug' },
+  { id: 'dm_morning', difficulty: 'easy', titleKey: 'dm_morning' },
+  { id: 'dm_thanks', difficulty: 'easy', titleKey: 'dm_thanks' },
+  { id: 'dm_compliment', difficulty: 'easy', titleKey: 'dm_compliment' },
 
-  { id: 'm_kiss', difficulty: 'medium', titleKey: 'm_kiss' },
-  { id: 'm_work_message', difficulty: 'medium', titleKey: 'm_work_message' },
-  { id: 'm_hold_hands', difficulty: 'medium', titleKey: 'm_hold_hands' },
-  { id: 'm_ask_about_day', difficulty: 'medium', titleKey: 'm_ask_about_day' },
-  { id: 'm_make_drink', difficulty: 'medium', titleKey: 'm_make_drink' },
+  { id: 'dm_drink', difficulty: 'medium', titleKey: 'dm_drink' },
+  { id: 'dm_listen', difficulty: 'medium', titleKey: 'dm_listen' },
+  { id: 'dm_plan', difficulty: 'medium', titleKey: 'dm_plan' },
 
-  { id: 'm_help_chores', difficulty: 'hard', titleKey: 'm_help_chores' },
-  { id: 'm_cook_snack', difficulty: 'hard', titleKey: 'm_cook_snack' },
-  { id: 'm_no_phone_10min', difficulty: 'hard', titleKey: 'm_no_phone_10min' },
-  { id: 'm_small_surprise', difficulty: 'hard', titleKey: 'm_small_surprise' },
-  { id: 'm_shoulder_massage', difficulty: 'hard', titleKey: 'm_shoulder_massage' },
+  { id: 'dm_chore', difficulty: 'hard', titleKey: 'dm_chore' },
+  { id: 'dm_massage', difficulty: 'hard', titleKey: 'dm_massage' },
+  { id: 'dm_gift', difficulty: 'hard', titleKey: 'dm_gift' },
+
+  { id: 'dm_dinner', difficulty: 'veryHard', titleKey: 'dm_dinner' },
 ];
 
 export const FEMALE_DAILY_POOL: QuestPoolItem[] = [
-  { id: 'f_warm_words', difficulty: 'easy', titleKey: 'f_warm_words' },
-  { id: 'f_compliment', difficulty: 'easy', titleKey: 'f_compliment' },
-  { id: 'f_good_morning', difficulty: 'easy', titleKey: 'f_good_morning' },
-  { id: 'f_thanks', difficulty: 'easy', titleKey: 'f_thanks' },
-  { id: 'f_hug', difficulty: 'easy', titleKey: 'f_hug' },
+  { id: 'df_morning', difficulty: 'easy', titleKey: 'df_morning' },
+  { id: 'df_proud', difficulty: 'easy', titleKey: 'df_proud' },
+  { id: 'df_hug', difficulty: 'easy', titleKey: 'df_hug' },
 
-  { id: 'f_kiss', difficulty: 'medium', titleKey: 'f_kiss' },
-  { id: 'f_day_message', difficulty: 'medium', titleKey: 'f_day_message' },
-  { id: 'f_hold_hands', difficulty: 'medium', titleKey: 'f_hold_hands' },
-  { id: 'f_ask_about_day', difficulty: 'medium', titleKey: 'f_ask_about_day' },
-  { id: 'f_make_drink', difficulty: 'medium', titleKey: 'f_make_drink' },
+  { id: 'df_snack', difficulty: 'medium', titleKey: 'df_snack' },
+  { id: 'df_listen', difficulty: 'medium', titleKey: 'df_listen' },
+  { id: 'df_date_idea', difficulty: 'medium', titleKey: 'df_date_idea' },
 
-  { id: 'f_help_task', difficulty: 'hard', titleKey: 'f_help_task' },
-  { id: 'f_cook_snack', difficulty: 'hard', titleKey: 'f_cook_snack' },
-  { id: 'f_no_phone_10min', difficulty: 'hard', titleKey: 'f_no_phone_10min' },
-  { id: 'f_small_surprise', difficulty: 'hard', titleKey: 'f_small_surprise' },
-  { id: 'f_hand_massage', difficulty: 'hard', titleKey: 'f_hand_massage' },
+  { id: 'df_errand', difficulty: 'hard', titleKey: 'df_errand' },
+  { id: 'df_massage', difficulty: 'hard', titleKey: 'df_massage' },
+  { id: 'df_gift', difficulty: 'hard', titleKey: 'df_gift' },
+
+  { id: 'df_evening', difficulty: 'veryHard', titleKey: 'df_evening' },
 ];

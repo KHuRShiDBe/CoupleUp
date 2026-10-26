@@ -33,7 +33,9 @@ export interface WishRouletteItem {
   isCoupon?: boolean;
 }
 
-export const WISH_ROULETTE_SPIN_COST_BOND = 2;
+// Server-enforced in spin_wish_roulette + a 48 h per-user cooldown (migration 0047).
+export const WISH_ROULETTE_SPIN_COST_BOND = 3;
+export const WISH_ROULETTE_COOLDOWN_HOURS = 48;
 
 export const RARITY_ORDER: WishRarity[] = ['cheap', 'almostBreakeven', 'x1', 'x3', 'x10'];
 
@@ -64,7 +66,7 @@ export const MALE_WISH_ITEMS: WishRouletteItem[] = [
   { key: 'm_special_scenario', titleKey: 'm_special_scenario', emoji: '🎭', rarity: 'x3', valueBond: 30, weight: 2 },
   { key: 'm_big_day', titleKey: 'm_big_day', emoji: '🎁', rarity: 'x3', valueBond: 30, weight: 2 },
   { key: 'm_jackpot', titleKey: 'm_jackpot', emoji: '💎', rarity: 'x10', valueBond: 0, weight: 1, isCoupon: true },
-  { key: 'm_grand_prize', titleKey: 'm_grand_prize', emoji: '👑', rarity: 'x10', valueBond: 50, weight: 1 },
+  { key: 'm_grand_prize', titleKey: 'm_grand_prize', emoji: '👑', rarity: 'x10', valueBond: 15, weight: 1 },
 ];
 
 export const FEMALE_WISH_ITEMS: WishRouletteItem[] = [
@@ -87,7 +89,7 @@ export const FEMALE_WISH_ITEMS: WishRouletteItem[] = [
   { key: 'f_her_pose', titleKey: 'f_her_pose', emoji: '👠', rarity: 'x3', valueBond: 30, weight: 2 },
   { key: 'f_big_day', titleKey: 'f_big_day', emoji: '📅', rarity: 'x3', valueBond: 30, weight: 2 },
   { key: 'f_jackpot', titleKey: 'f_jackpot', emoji: '👑', rarity: 'x10', valueBond: 0, weight: 1, isCoupon: true },
-  { key: 'f_shopping', titleKey: 'f_shopping', emoji: '🛍️', rarity: 'x10', valueBond: 50, weight: 1 },
+  { key: 'f_shopping', titleKey: 'f_shopping', emoji: '🛍️', rarity: 'x10', valueBond: 15, weight: 1 },
 ];
 
 export const wishItemsFor = (gender: 'male' | 'female'): WishRouletteItem[] =>

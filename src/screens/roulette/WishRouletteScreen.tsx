@@ -20,6 +20,7 @@ import { useIntimateRoulette } from '../../store/IntimateRouletteContext';
 import { haptics } from '../../utils/haptics';
 import { formatBond } from '../../utils/bond';
 import {
+  WISH_ROULETTE_COOLDOWN_HOURS,
   WISH_ROULETTE_SPIN_COST_BOND,
   WishRarity,
   WishRouletteItem,
@@ -133,12 +134,29 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
 
   const rotateInterpolate = spinValue.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'], extrapolate: 'extend' });
 
+  // One paid spin per WISH_ROULETTE_COOLDOWN_HOURS per user -- the server
+  // enforces it (migration 0047); this only disables the button and shows
+  // when the next spin is available.
+  const myId = auth.session?.user?.id ?? null;
+  const lastMySpin = wish.results.find((r) => r.spun_by === myId);
+  const nextSpinAt = lastMySpin
+    ? new Date(lastMySpin.created_at).getTime() + WISH_ROULETTE_COOLDOWN_HOURS * 3600 * 1000
+    : 0;
+  const cooldownMs = Math.max(0, nextSpinAt - Date.now());
+  const onCooldown = cooldownMs > 0;
+  const cooldownLabel = onCooldown
+    ? t('wishRoulette.nextSpinIn', {
+        h: Math.floor(cooldownMs / 3600000),
+        m: Math.floor((cooldownMs % 3600000) / 60000),
+      })
+    : '';
+
   const costPoints = Math.round(bond.toPoints(WISH_ROULETTE_SPIN_COST_BOND));
   const canAffordNow = sync.myStats.balance >= costPoints;
-  const canAffordAgain = lastBalanceAfter !== null && lastBalanceAfter >= costPoints;
+  const canAffordAgain = false; // 48 h cooldown: a second spin right after a result is never allowed
 
   const handleSpin = async () => {
-    if (spinning || !canAffordNow) return;
+    if (spinning || !canAffordNow || onCooldown) return;
     haptics.select();
     setSpinning(true);
     const result = await wish.spin(gender);
@@ -261,9 +279,9 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
           {!canAffordNow && <Text style={styles.warnText}>{t('wishRoulette.balanceLabel', { bond: formatBond(bond.toBond(sync.myStats.balance)) })}</Text>}
 
           <PrimaryButton
-            label={spinning ? t('wishRoulette.spinning') : t('wishRoulette.spin')}
+            label={spinning ? t('wishRoulette.spinning') : onCooldown ? cooldownLabel : t('wishRoulette.spin')}
             onPress={handleSpin}
-            disabled={spinning || !canAffordNow}
+            disabled={spinning || !canAffordNow || onCooldown}
             loading={spinning}
             colorOverride={{ primary: theme.primary, textOnPrimary: theme.textOnPrimary }}
             style={styles.spinButton}
@@ -301,16 +319,6 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
                 <Text style={[styles.modalItemTitle, { color: colors.text }]}>
                   {t(`wishRoulette.item_${resultItem.titleKey}` as TranslationKey)}
                 </Text>
-                <View style={[styles.rarityBadge, { backgroundColor: RARITY_BADGE_COLOR[resultItem.rarity] }]}>
-                  <Text style={styles.rarityBadgeText}>{t(RARITY_LABEL_KEY[resultItem.rarity])}</Text>
-                </View>
-                {/* isCoupon (the "Джекпот" sector, migration 0031) grants a
-                    free intimate-roulette spin, not BOND -- checked before
-                    the 'x10' money-prize case. Every other 'x10' item is
-                    still real money (matches prize_kind='money' in
-                    spin_wish_roulette); every non-x10 item is a wish, saved
-                    to the inventory, never credited as BOND. */}
-                <Text style={[styles.modalValue, { color: colors.text }]}>{outcomeText(resultItem)}</Text>
               </>
             )}
             <PrimaryButton label={t('wishRoulette.accept')} onPress={handleAccept} style={styles.modalButton} />

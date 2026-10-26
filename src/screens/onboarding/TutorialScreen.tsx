@@ -20,13 +20,14 @@ type Slide = {
   bodyKey: TranslationKey;
 };
 
-// Which flat icon illustrates each slide -- slides 0 and 6 (welcome/closing)
+// Which flat icon illustrates each slide -- the first and last slides (welcome/closing)
 // use the app logo instead, handled separately below.
 const SLIDE_ICON: Partial<Record<number, IconName>> = {
   1: 'periodDaily',
   3: 'add',
   4: 'notification',
   5: 'roulette',
+  6: 'savings',
 };
 
 const SLIDES: Slide[] = [
@@ -36,6 +37,7 @@ const SLIDES: Slide[] = [
   { titleKey: 'tutorial.slide4Title', bodyKey: 'tutorial.slide4Body' },
   { titleKey: 'tutorial.slide5Title', bodyKey: 'tutorial.slide5Body' },
   { titleKey: 'tutorial.slide6Title', bodyKey: 'tutorial.slide6Body' },
+  { titleKey: 'tutorial.slideBondTitle', bodyKey: 'tutorial.slideBondBody' },
   { titleKey: 'tutorial.slide7Title', bodyKey: 'tutorial.slide7Body' },
 ];
 
@@ -104,7 +106,7 @@ export const TutorialScreen = ({ navigation, route }: Props) => {
                   </Text>
                 </View>
               </View>
-            ) : index === 0 || index === 6 ? (
+            ) : index === 0 || index === SLIDES.length - 1 ? (
               <Image source={logo} style={styles.illustration} resizeMode="contain" />
             ) : (
               <IconImage name={SLIDE_ICON[index]!} size={96} />
