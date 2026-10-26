@@ -102,7 +102,7 @@ export const HistoryScreen = ({ navigation }: Props) => {
           <EmptyState icon="history" title={t('history.emptyTitle')} description={t('history.emptyDescription')} />
         }
         ListFooterComponent={
-          offers.offers.length === 0 ? null : (
+          offers.offers.length === 0 ? undefined : (
             <View style={styles.agreementsSection}>
               <Text style={[styles.agreementsTitle, { color: colors.text }]}>{t('history.agreementsTitle')}</Text>
               {offers.offers.map((o) => (
