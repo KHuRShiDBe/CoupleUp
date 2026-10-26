@@ -24,6 +24,9 @@ export const ACTIVITY_CATEGORY_BY_TYPE: Record<DbNotificationType, ActivityCateg
   nudge: 'couple',
   action_request: 'requests',
   action_response: 'requests',
+  wish_completion_request: 'requests',
+  wish_completion_response: 'requests',
+  prize_use_request: 'requests',
 };
 
 export const ACTIVITY_ICON_BY_TYPE: Record<DbNotificationType, IconName> = {
@@ -44,4 +47,7 @@ export const ACTIVITY_ICON_BY_TYPE: Record<DbNotificationType, IconName> = {
   nudge: 'notification',
   action_request: 'tasks',
   action_response: 'tasks',
+  wish_completion_request: 'wishlist',
+  wish_completion_response: 'wishlist',
+  prize_use_request: 'rewards',
 };

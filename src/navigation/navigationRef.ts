@@ -20,6 +20,11 @@ export const routeForNotificationType = (type: DbNotificationType): keyof RootSt
       return 'Tasks';
     case 'goal':
       return 'SharedGoals';
+    case 'wish_completion_request':
+    case 'wish_completion_response':
+      return 'Wishlist';
+    case 'prize_use_request':
+      return 'Savings';
     case 'action':
     default:
       return 'Notifications';

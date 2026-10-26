@@ -660,6 +660,13 @@ export const en: TranslationDictionary = {
     priorityLow: 'Low',
     priorityMedium: 'Medium',
     priorityHigh: 'High',
+    markDone: '✅ I did it',
+    pendingStatus: '⏳ Awaiting confirmation',
+    pendingForAuthor: 'Your partner marked this wish as fulfilled',
+    confirm: 'Confirm',
+    decline: 'Decline',
+    doneStatus: '✅ Fulfilled',
+    historyTitle: 'Fulfilled wishes',
   },
   monthlySummary: {
     title: 'Monthly Summary',
@@ -1106,6 +1113,8 @@ export const en: TranslationDictionary = {
     partnerRequestsTitle: 'Awaiting your confirmation',
     confirm: 'Confirm',
     decline: 'Decline',
+    partnerUsedTitle: 'Your partner used:',
+    partnerUsedOk: 'OK',
   },
   quests: {
     tabDaily: 'Every day',

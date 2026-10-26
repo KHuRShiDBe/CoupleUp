@@ -45,6 +45,20 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
   const visibleItems = !owner
     ? wishlist.items
     : wishlist.items.filter((item) => (owner === 'me' ? item.created_by === myId : item.created_by !== myId));
+  // 'done' wishes leave the active list and are shown as history below.
+  // A missing status (database without migration 0045) counts as active.
+  const activeItems = visibleItems.filter((item) => (item.status ?? 'active') !== 'done');
+  const doneItems = visibleItems.filter((item) => item.status === 'done');
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const runForItem = async (id: string, fn: () => Promise<void>) => {
+    if (busyId) return;
+    setBusyId(id);
+    try {
+      await fn();
+    } finally {
+      setBusyId(null);
+    }
+  };
   const screenTitle = owner === 'me' ? t('home.myWishes') : owner === 'partner' ? t('home.partnerWishes') : t('wishlist.title');
 
   const [title, setTitle] = useState('');
@@ -138,10 +152,13 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
 
         {wishlist.loading && wishlist.items.length === 0 ? (
           <LoadingState />
-        ) : visibleItems.length === 0 ? (
+        ) : activeItems.length === 0 ? (
           <EmptyState icon="goal" title={t('wishlist.emptyTitle')} description={t('wishlist.emptyDescription')} />
         ) : (
-          visibleItems.map((item) => {
+          activeItems.map((item) => {
+            const isMine = item.created_by === myId;
+            const isPending = item.status === 'pending';
+            const busy = busyId === item.id;
             const priceUsdValue = item.price_usd ?? 0;
             const points = bond.toPoints(priceUsdValue);
             return (
@@ -168,7 +185,39 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
                 <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>
                   {item.created_by === auth.session?.user?.id ? t('promises.me') : t('promises.partner')}
                 </Text>
-                {item.created_by === auth.session?.user?.id && (
+                {isPending && (
+                  <Text style={[styles.statusText, { color: colors.primary }]}>
+                    {isMine ? t('wishlist.pendingForAuthor') : t('wishlist.pendingStatus')}
+                  </Text>
+                )}
+                {isPending && isMine && (
+                  <View style={styles.actionRow}>
+                    <PrimaryButton
+                      label={t('wishlist.confirm')}
+                      onPress={() => runForItem(item.id, () => wishlist.respondCompletion(item.id, true))}
+                      loading={busy}
+                      disabled={!!busyId}
+                      style={styles.actionButton}
+                    />
+                    <PrimaryButton
+                      label={t('wishlist.decline')}
+                      variant="outline"
+                      onPress={() => runForItem(item.id, () => wishlist.respondCompletion(item.id, false))}
+                      disabled={!!busyId}
+                      style={styles.actionButton}
+                    />
+                  </View>
+                )}
+                {!isPending && !isMine && (
+                  <PrimaryButton
+                    label={t('wishlist.markDone')}
+                    onPress={() => runForItem(item.id, () => wishlist.requestCompletion(item.id))}
+                    loading={busy}
+                    disabled={!!busyId}
+                    style={styles.markDoneButton}
+                  />
+                )}
+                {!isPending && isMine && (
                   <Pressable onPress={() => wishlist.removeItem(item.id)} style={styles.removeButton}>
                     <Text style={[styles.removeButtonText, { color: colors.danger }]}>{t('wishlist.remove')}</Text>
                   </Pressable>
@@ -176,6 +225,31 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
               </View>
             );
           })
+        )}
+
+        {doneItems.length > 0 && (
+          <>
+            <Text style={[styles.historyTitle, { color: colors.text }]}>{t('wishlist.historyTitle')}</Text>
+            {doneItems.map((item) => (
+              <View
+                key={item.id}
+                style={[styles.card, styles.doneCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <View style={styles.cardHeader}>
+                  <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                </View>
+                <Text style={[styles.statusText, { color: colors.success }]}>
+                  {t('wishlist.doneStatus')}
+                  {item.completed_at ? ` · ${new Date(item.completed_at).toLocaleDateString()}` : ''}
+                </Text>
+                <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>
+                  {item.created_by === myId ? t('promises.me') : t('promises.partner')}
+                </Text>
+              </View>
+            ))}
+          </>
         )}
       </ScrollView>
     </ScreenContainer></ScreenBackground>
@@ -261,6 +335,30 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     alignSelf: 'flex-start',
+  },
+  statusText: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  actionButton: {
+    flex: 1,
+  },
+  markDoneButton: {
+    marginTop: spacing.xs,
+  },
+  historyTitle: {
+    fontSize: fontSize.md,
+    fontWeight: '800',
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  doneCard: {
+    opacity: 0.75,
   },
   removeButtonText: {
     fontSize: fontSize.xs,

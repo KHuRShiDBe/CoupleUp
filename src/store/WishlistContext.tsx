@@ -17,6 +17,10 @@ interface WishlistValue {
   // yet or the insert failed (error is then set).
   addItem: (input: { title: string; priceUsd?: number; priority: WishlistPriority }) => Promise<boolean>;
   removeItem: (id: string) => Promise<void>;
+  // Partner marks a wish as fulfilled (waits for the author's confirmation).
+  requestCompletion: (id: string) => Promise<void>;
+  // Author confirms or declines a pending completion.
+  respondCompletion: (id: string, approve: boolean) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -82,6 +86,24 @@ export const WishlistProvider = ({ children }: { children: React.ReactNode }) =>
         try {
           await wishlistService.removeWishlistItem(id);
           setItems((prev) => prev.filter((i) => i.id !== id));
+        } catch (e) {
+          setError(friendlyMessage(toServiceError(e)));
+        }
+      },
+      requestCompletion: async (id: string) => {
+        setError(null);
+        try {
+          const row = await wishlistService.requestWishCompletion(id);
+          setItems((prev) => prev.map((i) => (i.id === row.id ? row : i)));
+        } catch (e) {
+          setError(friendlyMessage(toServiceError(e)));
+        }
+      },
+      respondCompletion: async (id: string, approve: boolean) => {
+        setError(null);
+        try {
+          const row = await wishlistService.respondWishCompletion(id, approve);
+          setItems((prev) => prev.map((i) => (i.id === row.id ? row : i)));
         } catch (e) {
           setError(friendlyMessage(toServiceError(e)));
         }

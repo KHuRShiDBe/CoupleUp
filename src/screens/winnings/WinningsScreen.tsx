@@ -20,24 +20,14 @@ import { friendlyMessage, toServiceError } from '../../services/supabase/errors'
 import { DbWishInventoryItem, WishInventoryStatus } from '../../types/database';
 import { formatRelativeTime } from '../../utils/date';
 import { haptics } from '../../utils/haptics';
+import { COUPON_ITEM_KEY, resolveItemTitle } from '../../utils/inventory';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Savings'>;
-
-const COUPON_ITEM_KEY = 'intimate_spin_coupon';
 
 const STATUS_LABEL_KEY: Record<WishInventoryStatus, TranslationKey> = {
   available: 'winnings.statusAvailable',
   pending_use: 'winnings.statusPending',
   used: 'winnings.statusUsed',
-};
-
-// Resolves an inventory row's title from whichever wheel actually won it --
-// nothing is renamed or duplicated, this just picks the right existing
-// translation namespace for the item_key already stored on the row.
-const resolveItemTitle = (itemKey: string, t: (key: TranslationKey, params?: Record<string, string | number>) => string): string => {
-  if (itemKey === COUPON_ITEM_KEY) return t('winnings.couponItemLabel');
-  if (itemKey.startsWith('shop_')) return t(`shopRoulette.item_${itemKey}` as TranslationKey);
-  return t(`wishRoulette.item_${itemKey}` as TranslationKey);
 };
 
 export const WinningsScreen = ({ navigation }: Props) => {

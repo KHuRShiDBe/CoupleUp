@@ -661,6 +661,13 @@ const ruRaw = {
     priorityLow: 'Низкий',
     priorityMedium: 'Средний',
     priorityHigh: 'Высокий',
+    markDone: '✅ Я выполнил',
+    pendingStatus: '⏳ Ожидает подтверждения',
+    pendingForAuthor: 'Партнёр отметил это желание как выполненное',
+    confirm: 'Подтвердить',
+    decline: 'Отклонить',
+    doneStatus: '✅ Выполнено',
+    historyTitle: 'История выполненных',
   },
   monthlySummary: {
     title: 'Итоги месяца',
@@ -1107,6 +1114,8 @@ const ruRaw = {
     partnerRequestsTitle: 'Ждёт вашего подтверждения',
     confirm: 'Подтвердить',
     decline: 'Отклонить',
+    partnerUsedTitle: 'Партнёр использовал:',
+    partnerUsedOk: 'ОК',
   },
   quests: {
     tabDaily: 'Задания на каждый день',

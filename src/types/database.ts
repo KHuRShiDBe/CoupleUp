@@ -455,7 +455,10 @@ export type DbNotificationType =
   | 'purchase_response'
   | 'nudge'
   | 'action_request'
-  | 'action_response';
+  | 'action_response'
+  | 'wish_completion_request'
+  | 'wish_completion_response'
+  | 'prize_use_request';
 
 export interface DbNotification {
   id: string;
@@ -501,7 +504,15 @@ export interface DbWishlistItem {
   price_usd: number | null;
   priority: WishlistPriority;
   created_at: string;
+  // Added by migration 0045 -- optional so rows from a database without it
+  // still type-check; a missing status means 'active'.
+  status?: DbWishlistStatus;
+  completion_requested_by?: string | null;
+  completion_requested_at?: string | null;
+  completed_at?: string | null;
 }
+
+export type DbWishlistStatus = 'active' | 'pending' | 'done';
 
 // ---- Mini-games (migration 0018) -- PartnerQuiz/EitherOr/TruthOrDare move
 // off local-only state. Game CONTENT stays static client-side (same pattern

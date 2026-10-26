@@ -101,9 +101,9 @@ export const RewardsScreen = () => {
       (ar) => ar.status === 'pending' && ar.period === period && ar.period_key === periodKey && ar.item_key === itemKey,
     );
 
-  // Bonus claim (5/7/10) awaiting the partner's ✓/✕ -- claim_quest_bonus
-  // (migration 0043) no longer credits immediately, it creates a pending
-  // action_request like everything else.
+  // Bonus claim (5/7/10) awaiting the partner's ✓/✕ -- only for requests
+  // created under migration 0043. Since 0046 claim_quest_bonus pays at once
+  // (the counted items were already partner-approved), so no new ones appear.
   const isBonusPending = (milestone: number) =>
     sync.actionRequests.some(
       (ar) =>

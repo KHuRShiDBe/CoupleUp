@@ -661,6 +661,13 @@ export const uz: TranslationDictionary = {
     priorityLow: 'Past',
     priorityMedium: "O'rta",
     priorityHigh: 'Yuqori',
+    markDone: '✅ Bajardim',
+    pendingStatus: '⏳ Tasdiqlash kutilmoqda',
+    pendingForAuthor: "Sherigingiz bu istakni bajarilgan deb belgiladi",
+    confirm: 'Tasdiqlash',
+    decline: 'Rad etish',
+    doneStatus: '✅ Bajarildi',
+    historyTitle: 'Bajarilgan istaklar',
   },
   monthlySummary: {
     title: 'Oylik yakunlar',
@@ -1107,6 +1114,8 @@ export const uz: TranslationDictionary = {
     partnerRequestsTitle: 'Tasdiqingizni kutmoqda',
     confirm: 'Tasdiqlash',
     decline: 'Rad etish',
+    partnerUsedTitle: 'Sherigingiz ishlatdi:',
+    partnerUsedOk: 'OK',
   },
   quests: {
     tabDaily: 'Har kuni',

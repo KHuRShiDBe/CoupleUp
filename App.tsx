@@ -24,6 +24,7 @@ import { useProfileAutoSync } from './src/store/useProfileAutoSync';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { InAppNotificationBanner } from './src/components/notifications/InAppNotificationBanner';
 import { AppErrorBoundary } from './src/components/common/AppErrorBoundary';
+import { PartnerPrizeUseModal } from './src/components/notifications/PartnerPrizeUseModal';
 
 const AppShell = () => {
   useProfileAutoSync();
@@ -36,6 +37,7 @@ const AppShell = () => {
       <AppErrorBoundary onRecover={() => setNavigatorKey((k) => k + 1)}>
         <RootNavigator key={navigatorKey} />
         <InAppNotificationBanner />
+        <PartnerPrizeUseModal />
       </AppErrorBoundary>
     </>
   );

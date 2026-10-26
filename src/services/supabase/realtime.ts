@@ -545,11 +545,18 @@ export const subscribeToShopRoulette = (coupleId: string, handlers: ShopRoulette
 // Couple-wide (not owner-only) so a status change either partner makes --
 // requesting to use an item, or confirming/declining the other's request --
 // shows up on both phones without a manual refresh.
-export const subscribeToCoupleInventory = (coupleId: string, onChange: () => void): (() => void) => {
+// `channelKey` must differ between simultaneous subscribers: realtime-js
+// returns the already-existing channel for a repeated name, so two users of
+// the same name would share (and tear down) one channel.
+export const subscribeToCoupleInventory = (
+  coupleId: string,
+  onChange: () => void,
+  channelKey = 'savings',
+): (() => void) => {
   if (!isSupabaseConfigured) return () => {};
 
   const channel = supabase
-    .channel(`savings-${coupleId}`)
+    .channel(`${channelKey}-${coupleId}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'wish_inventory', filter: `couple_id=eq.${coupleId}` },
