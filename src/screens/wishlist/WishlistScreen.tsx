@@ -14,6 +14,7 @@ import { ErrorState } from '../../components/common/ErrorState';
 import { BackendStatusBanner } from '../../components/common/BackendStatusBanner';
 import { useAuth } from '../../store/AuthContext';
 import { useWishlist } from '../../store/WishlistContext';
+import { useCoupleSync } from '../../store/CoupleSyncContext';
 import { useBond } from '../../store/BondContext';
 import { useTranslation } from '../../localization/useTranslation';
 import { formatBond, formatUsd } from '../../utils/bond';
@@ -29,6 +30,10 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
   const { t } = useTranslation();
   const auth = useAuth();
   const wishlist = useWishlist();
+  const sync = useCoupleSync();
+  // Wishes live on the couple -- without a paired couple there is nowhere to
+  // save them, so say so instead of silently ignoring "Add".
+  const hasCouple = !!sync.couple;
   const bond = useBond();
 
   // Optional filter from the two Home cards ("Мои желания" / "Желания
@@ -58,10 +63,13 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
     haptics.confirm();
     setSubmitting(true);
     try {
-      await wishlist.addItem({ title: title.trim(), priceUsd: price, priority });
-      setTitle('');
-      setPriceUsd('');
-      setPriority('medium');
+      // Keep what the user typed if saving failed.
+      const saved = await wishlist.addItem({ title: title.trim(), priceUsd: price, priority });
+      if (saved) {
+        setTitle('');
+        setPriceUsd('');
+        setPriority('medium');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -83,6 +91,7 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
       <ScreenHeader title={screenTitle} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {!!wishlist.error && <BackendStatusBanner message={wishlist.error} onRetry={wishlist.clearError} />}
+        {!hasCouple && <BackendStatusBanner message={t('compliments.noPartner')} />}
         {owner !== 'partner' && (
           <View style={[styles.form, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TextInput
@@ -121,7 +130,7 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
             <PrimaryButton
               label={t('wishlist.addButton')}
               onPress={handleAdd}
-              disabled={!title.trim() || !priceUsd.trim() || submitting}
+              disabled={!hasCouple || !title.trim() || !priceUsd.trim() || submitting}
               loading={submitting}
             />
           </View>

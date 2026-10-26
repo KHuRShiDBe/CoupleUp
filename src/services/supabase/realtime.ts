@@ -12,6 +12,11 @@ export const subscribeToWishlist = (coupleId: string, onChange: () => void): (()
       { event: '*', schema: 'public', table: 'wishlist_items', filter: `couple_id=eq.${coupleId}` },
       () => onChange(),
     )
+    // Supabase Realtime never delivers DELETE events to a filtered
+    // subscription, so a partner's removal was never synced. Listen to
+    // DELETE unfiltered and just refetch -- the refetch itself stays scoped
+    // to this couple by the query and RLS.
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'wishlist_items' }, () => onChange())
     .subscribe();
 
   return () => {

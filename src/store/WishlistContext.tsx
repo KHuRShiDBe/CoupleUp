@@ -13,7 +13,9 @@ interface WishlistValue {
   error: string | null;
   clearError: () => void;
   items: DbWishlistItem[];
-  addItem: (input: { title: string; priceUsd?: number; priority: WishlistPriority }) => Promise<void>;
+  // Resolves true only once the row is saved; false if there is no couple
+  // yet or the insert failed (error is then set).
+  addItem: (input: { title: string; priceUsd?: number; priority: WishlistPriority }) => Promise<boolean>;
   removeItem: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -63,13 +65,16 @@ export const WishlistProvider = ({ children }: { children: React.ReactNode }) =>
       clearError: () => setError(null),
       items,
       addItem: async (input) => {
-        if (!coupleId || !userId) return;
+        if (!coupleId || !userId) return false;
         setError(null);
         try {
           const row = await wishlistService.addWishlistItem({ coupleId, createdBy: userId, ...input });
-          setItems((prev) => [row, ...prev]);
+          // Realtime may already have refreshed the list with this row.
+          setItems((prev) => (prev.some((i) => i.id === row.id) ? prev : [row, ...prev]));
+          return true;
         } catch (e) {
           setError(friendlyMessage(toServiceError(e)));
+          return false;
         }
       },
       removeItem: async (id: string) => {
