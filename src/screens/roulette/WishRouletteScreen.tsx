@@ -35,6 +35,13 @@ const SEGMENT_ANGLE = 360 / SEGMENT_COUNT;
 const SPIN_DURATION_MIN = 3500;
 const SPIN_DURATION_MAX = 5000;
 const LABEL_SIZE = 26;
+
+// Fixed, non-sequential placement of sector numbers around the wheel
+// (clockwise from the pointer). Number n always means prize items[n - 1]
+// (same as the 📖 list); only where it sits on the wheel is shuffled. Each of
+// 1..20 appears exactly once and no two neighbours (incl. 8 -> 1 wrap-around)
+// are consecutive. Kept constant so the wheel looks the same every visit.
+const WHEEL_ORDER = [1, 12, 5, 16, 9, 20, 3, 14, 7, 18, 11, 2, 13, 6, 17, 10, 19, 4, 15, 8];
 const LABEL_RADIUS_FRACTION = 0.8;
 
 // Male kept exactly as before (not touched). Female used to hardcode its own
@@ -106,7 +113,8 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
   const theme = GENDER_THEME[gender];
 
   const wedges = useMemo(() => {
-    return items.map((item, i) => {
+    return WHEEL_ORDER.map((number, i) => {
+      const item = items[number - 1];
       const center = i * SEGMENT_ANGLE - 90;
       const start = center - SEGMENT_ANGLE / 2;
       const end = center + SEGMENT_ANGLE / 2;
@@ -115,7 +123,7 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
         item,
         path: wedgePath(R, R, R, start, end),
         color: wheelColors[i % wheelColors.length],
-        number: i + 1,
+        number,
         x: pos.x - LABEL_SIZE / 2,
         y: pos.y - LABEL_SIZE / 2,
       };
@@ -145,7 +153,10 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
     // pointer (see `wedges`), so that is the angle to bring under it. The old
     // extra half-sector parked the pointer on a wedge boundary, letting the
     // jitter show the neighbouring sector instead of the server's result.
-    const segmentCenter = safeIdx * SEGMENT_ANGLE;
+    // The server's item is number safeIdx + 1; bring the wheel position that
+    // shows that number (not position safeIdx) under the pointer.
+    const position = WHEEL_ORDER.indexOf(safeIdx + 1);
+    const segmentCenter = position * SEGMENT_ANGLE;
     const fullSpins = 5 + Math.floor(Math.random() * 2);
     const jitter = (Math.random() - 0.5) * SEGMENT_ANGLE * 0.6;
     const targetAngle = fullSpins * 360 + (360 - segmentCenter) + jitter;
@@ -332,7 +343,7 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
                     resultNumber === i + 1 && { backgroundColor: theme.soft, borderColor: theme.primary },
                   ]}
                 >
-                  <View style={[styles.prizeNumber, { backgroundColor: wheelColors[i % wheelColors.length] }]}>
+                  <View style={[styles.prizeNumber, { backgroundColor: wheelColors[WHEEL_ORDER.indexOf(i + 1) % wheelColors.length] }]}>
                     <Text style={styles.prizeNumberText}>{i + 1}</Text>
                   </View>
                   <Text style={styles.prizeEmoji}>{item.emoji}</Text>
