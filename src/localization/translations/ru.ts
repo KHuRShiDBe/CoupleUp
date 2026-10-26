@@ -1307,6 +1307,7 @@ const ruRaw = {
     prizeListTitle: 'Призы рулетки',
     prizeListSubtitle: 'Номер сектора и что он означает',
     prizeListClose: 'Закрыть',
+    useCoupon: 'Использовать купон ({count})',
     changeGender: 'Сменить рулетку',
     item_m_tea_coffee: 'Чай/кофе',
     item_m_treat: 'Вкусняшка',

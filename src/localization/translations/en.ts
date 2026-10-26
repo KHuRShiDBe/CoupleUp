@@ -1306,6 +1306,7 @@ export const en: TranslationDictionary = {
     prizeListTitle: 'Roulette prizes',
     prizeListSubtitle: 'Sector number and what it means',
     prizeListClose: 'Close',
+    useCoupon: 'Use coupon ({count})',
     changeGender: 'Switch wheel',
     item_m_tea_coffee: 'Tea/coffee',
     item_m_treat: 'A treat',

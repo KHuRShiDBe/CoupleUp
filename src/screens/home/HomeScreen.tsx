@@ -232,7 +232,7 @@ export const HomeScreen = ({ navigation }: Props) => {
           <QuickActionCard
             label={t('roulette.hubTitle')}
             icon="roulette"
-            onPress={() => navigation.navigate('RouletteHub')}
+            onPress={() => navigation.navigate('WishRoulette')}
             cardStyle={HOME_CARD_STYLE}
             iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
             labelStyle={HOME_CARD_LABEL_STYLE}

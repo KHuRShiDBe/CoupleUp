@@ -16,6 +16,7 @@ import { useAuth } from '../../store/AuthContext';
 import { useCoupleSync } from '../../store/CoupleSyncContext';
 import { useBond } from '../../store/BondContext';
 import { useWishRoulette } from '../../store/WishRouletteContext';
+import { useIntimateRoulette } from '../../store/IntimateRouletteContext';
 import { haptics } from '../../utils/haptics';
 import { formatBond } from '../../utils/bond';
 import {
@@ -80,6 +81,7 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
   const sync = useCoupleSync();
   const bond = useBond();
   const wish = useWishRoulette();
+  const intimate = useIntimateRoulette();
 
   // Locked to the signed-in user's own profile role -- never a manual choice.
   // Falls back to 'male' only in the instant before the profile row has
@@ -162,6 +164,9 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
       setLastBalanceAfter(result.balanceAfter);
       setResultVisible(true);
       haptics.success();
+      // A jackpot sector grants a coupon -- refresh so the "use coupon"
+      // button below reflects it straight away.
+      if (pool[safeIdx].isCoupon) intimate.refresh();
     });
   };
 
@@ -252,6 +257,20 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
             colorOverride={{ primary: theme.primary, textOnPrimary: theme.textOnPrimary }}
             style={styles.spinButton}
           />
+
+          {/* Jackpot coupons are still spent in the intimate roulette (server
+              RPC spin_intimate_roulette, mutual consent) -- shown only when
+              the couple actually holds coupons, so none are lost. */}
+          {intimate.couponCount > 0 && (
+            <PrimaryButton
+              label={t('wishRoulette.useCoupon', { count: intimate.couponCount })}
+              onPress={() => navigation.navigate('IntimateRoulette')}
+              disabled={spinning}
+              variant="outline"
+              colorOverride={{ primary: theme.primary, textOnPrimary: theme.textOnPrimary }}
+              style={styles.couponButton}
+            />
+          )}
         </ScrollView>
 
       <Modal visible={resultVisible} transparent animationType="fade" onRequestClose={() => setResultVisible(false)}>
@@ -428,6 +447,10 @@ const styles = StyleSheet.create({
   },
   spinButton: {
     width: '100%',
+  },
+  couponButton: {
+    width: '100%',
+    marginTop: spacing.sm,
   },
   modalOverlay: {
     flex: 1,

@@ -1307,6 +1307,7 @@ export const uz: TranslationDictionary = {
     prizeListTitle: 'Ruletka sovrinlari',
     prizeListSubtitle: "Sektor raqami va uning ma'nosi",
     prizeListClose: 'Yopish',
+    useCoupon: 'Kuponni ishlatish ({count})',
     changeGender: "G'ildirakni almashtirish",
     item_m_tea_coffee: 'Choy/kofe',
     item_m_treat: "Tansiq taom",
