@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Modal, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
@@ -33,8 +33,8 @@ const SEGMENT_COUNT = 20;
 const SEGMENT_ANGLE = 360 / SEGMENT_COUNT;
 const SPIN_DURATION_MIN = 3500;
 const SPIN_DURATION_MAX = 5000;
-const LABEL_WIDTH = 34;
-const LABEL_RADIUS_FRACTION = 0.74;
+const LABEL_SIZE = 26;
+const LABEL_RADIUS_FRACTION = 0.8;
 
 // Male kept exactly as before (not touched). Female used to hardcode its own
 // hot-pink '#E91E8C'/'#FFEAF4' here, duplicating (and drifting from) the app
@@ -88,6 +88,9 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
 
   const [spinning, setSpinning] = useState(false);
   const [resultItem, setResultItem] = useState<WishRouletteItem | null>(null);
+  // 1-based sector number of the last result, as printed on the wheel.
+  const [resultNumber, setResultNumber] = useState<number | null>(null);
+  const [prizeListVisible, setPrizeListVisible] = useState(false);
   const [resultVisible, setResultVisible] = useState(false);
   const [lastBalanceAfter, setLastBalanceAfter] = useState<number | null>(null);
 
@@ -110,8 +113,9 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
         item,
         path: wedgePath(R, R, R, start, end),
         color: wheelColors[i % wheelColors.length],
-        x: pos.x - LABEL_WIDTH / 2,
-        y: pos.y - 16,
+        number: i + 1,
+        x: pos.x - LABEL_SIZE / 2,
+        y: pos.y - LABEL_SIZE / 2,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -135,7 +139,11 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
     const pool = wishItemsFor(gender);
     const idx = pool.findIndex((p) => p.key === result.itemKey);
     const safeIdx = idx >= 0 ? idx : 0;
-    const segmentCenter = safeIdx * SEGMENT_ANGLE + SEGMENT_ANGLE / 2;
+    // Wedge i is drawn centred on i * SEGMENT_ANGLE clockwise from the
+    // pointer (see `wedges`), so that is the angle to bring under it. The old
+    // extra half-sector parked the pointer on a wedge boundary, letting the
+    // jitter show the neighbouring sector instead of the server's result.
+    const segmentCenter = safeIdx * SEGMENT_ANGLE;
     const fullSpins = 5 + Math.floor(Math.random() * 2);
     const jitter = (Math.random() - 0.5) * SEGMENT_ANGLE * 0.6;
     const targetAngle = fullSpins * 360 + (360 - segmentCenter) + jitter;
@@ -150,11 +158,21 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
     }).start(() => {
       setSpinning(false);
       setResultItem(pool[safeIdx]);
+      setResultNumber(safeIdx + 1);
       setLastBalanceAfter(result.balanceAfter);
       setResultVisible(true);
       haptics.success();
     });
   };
+
+  // Same branching as the result card: coupon (Джекпот) -> money (other x10)
+  // -> wish saved to the inventory. Shared by the result and the prize list.
+  const outcomeText = (item: WishRouletteItem) =>
+    item.isCoupon
+      ? t('wishRoulette.wonCoupon')
+      : item.rarity === 'x10'
+        ? t('wishRoulette.valueLabel', { bond: item.valueBond })
+        : t('wishRoulette.savedToInventory');
 
   const handleAccept = () => {
     haptics.confirm();
@@ -188,6 +206,20 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
           </View>
 
           <View style={styles.wheelArea}>
+            <Pressable
+              onPress={() => setPrizeListVisible(true)}
+              disabled={spinning}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('wishRoulette.prizeListButton')}
+              style={({ pressed }) => [
+                styles.bookButton,
+                shadow.soft,
+                { backgroundColor: colors.card, borderColor: theme.primary, opacity: pressed || spinning ? 0.6 : 1 },
+              ]}
+            >
+              <Text style={styles.bookIcon}>📖</Text>
+            </Pressable>
             <View style={styles.pointerWrap}>
               <View style={[styles.pointerTriangle, { borderTopColor: theme.primary }]} />
             </View>
@@ -200,11 +232,8 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
                 <Circle cx={R} cy={R} r={R * 0.16} fill="#FFFFFF" stroke={theme.primary} strokeWidth={3} />
               </Svg>
               {wedges.map((w) => (
-                <View key={w.item.key} style={[styles.labelWrap, { left: w.x, top: w.y, width: LABEL_WIDTH }]}>
-                  <Text style={styles.labelEmoji}>{w.item.emoji}</Text>
-                  <Text numberOfLines={3} style={styles.labelText}>
-                    {t(`wishRoulette.item_${w.item.titleKey}` as TranslationKey)}
-                  </Text>
+                <View key={w.item.key} style={[styles.labelWrap, { left: w.x, top: w.y }]}>
+                  <Text style={styles.labelNumber}>{w.number}</Text>
                 </View>
               ))}
               <View style={[styles.centerHeart, { left: R - 14, top: R - 14 }]}>
@@ -231,6 +260,13 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
             <Text style={[styles.modalTitle, { color: colors.textSecondary }]}>{t('wishRoulette.resultTitle')}</Text>
             {!!resultItem && (
               <>
+                {resultNumber !== null && (
+                  <View style={[styles.resultNumberBadge, { backgroundColor: theme.primary }]}>
+                    <Text style={[styles.resultNumberText, { color: theme.textOnPrimary }]}>
+                      {t('wishRoulette.sectorNumber', { n: resultNumber })}
+                    </Text>
+                  </View>
+                )}
                 <Text style={styles.modalEmoji}>{resultItem.emoji}</Text>
                 <Text style={[styles.modalItemTitle, { color: colors.text }]}>
                   {t(`wishRoulette.item_${resultItem.titleKey}` as TranslationKey)}
@@ -244,21 +280,63 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
                     still real money (matches prize_kind='money' in
                     spin_wish_roulette); every non-x10 item is a wish, saved
                     to the inventory, never credited as BOND. */}
-                {resultItem.isCoupon ? (
-                  <Text style={[styles.modalValue, { color: colors.text }]}>{t('wishRoulette.wonCoupon')}</Text>
-                ) : resultItem.rarity === 'x10' ? (
-                  <Text style={[styles.modalValue, { color: colors.text }]}>
-                    {t('wishRoulette.valueLabel', { bond: resultItem.valueBond })}
-                  </Text>
-                ) : (
-                  <Text style={[styles.modalValue, { color: colors.text }]}>{t('wishRoulette.savedToInventory')}</Text>
-                )}
+                <Text style={[styles.modalValue, { color: colors.text }]}>{outcomeText(resultItem)}</Text>
               </>
             )}
             <PrimaryButton label={t('wishRoulette.accept')} onPress={handleAccept} style={styles.modalButton} />
             {canAffordAgain && (
               <PrimaryButton label={t('wishRoulette.spinAgain')} onPress={handleSpinAgain} variant="outline" />
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={prizeListVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPrizeListVisible(false)}
+      >
+        <View style={styles.sheetOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPrizeListVisible(false)} />
+          <View style={[styles.sheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.sheetTitle, { color: colors.text }]}>📖 {t('wishRoulette.prizeListTitle')}</Text>
+            <Text style={[styles.sheetSubtitle, { color: colors.textSecondary }]}>{t('wishRoulette.prizeListSubtitle')}</Text>
+            <ScrollView style={styles.sheetList} showsVerticalScrollIndicator={false}>
+              {items.map((item, i) => (
+                <View
+                  key={item.key}
+                  style={[
+                    styles.prizeRow,
+                    { borderColor: colors.border },
+                    resultNumber === i + 1 && { backgroundColor: theme.soft, borderColor: theme.primary },
+                  ]}
+                >
+                  <View style={[styles.prizeNumber, { backgroundColor: wheelColors[i % wheelColors.length] }]}>
+                    <Text style={styles.prizeNumberText}>{i + 1}</Text>
+                  </View>
+                  <Text style={styles.prizeEmoji}>{item.emoji}</Text>
+                  <View style={styles.prizeInfo}>
+                    <Text style={[styles.prizeTitle, { color: colors.text }]} numberOfLines={2}>
+                      {t(`wishRoulette.item_${item.titleKey}` as TranslationKey)}
+                    </Text>
+                    <Text style={[styles.prizeOutcome, { color: colors.textSecondary }]}>
+                      {outcomeText(item)}
+                    </Text>
+                  </View>
+                  <View style={[styles.prizeRarity, { backgroundColor: RARITY_BADGE_COLOR[item.rarity] }]}>
+                    <Text style={styles.rarityBadgeText}>{t(RARITY_LABEL_KEY[item.rarity])}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+            <PrimaryButton
+              label={t('wishRoulette.prizeListClose')}
+              onPress={() => setPrizeListVisible(false)}
+              colorOverride={{ primary: theme.primary, textOnPrimary: theme.textOnPrimary }}
+              style={styles.sheetClose}
+            />
           </View>
         </View>
       </Modal>
@@ -286,6 +364,22 @@ const styles = StyleSheet.create({
   wheelArea: {
     alignItems: 'center',
     marginBottom: spacing.lg,
+    alignSelf: 'stretch',
+  },
+  bookButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 3,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookIcon: {
+    fontSize: 22,
   },
   pointerWrap: {
     zIndex: 2,
@@ -302,16 +396,14 @@ const styles = StyleSheet.create({
   },
   labelWrap: {
     position: 'absolute',
+    width: LABEL_SIZE,
+    height: LABEL_SIZE,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  labelEmoji: {
-    fontSize: 12,
-    lineHeight: 13,
-  },
-  labelText: {
-    fontSize: 6.5,
-    lineHeight: 7.5,
-    fontWeight: '700',
+  labelNumber: {
+    fontSize: 14,
+    fontWeight: '800',
     color: '#FFFFFF',
     textAlign: 'center',
     textShadowColor: 'rgba(0,0,0,0.45)',
@@ -354,6 +446,16 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     marginBottom: spacing.xs,
   },
+  resultNumberBadge: {
+    borderRadius: radius.round,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  resultNumberText: {
+    fontSize: fontSize.md,
+    fontWeight: '800',
+  },
   modalEmoji: {
     fontSize: 48,
     marginBottom: spacing.xs,
@@ -382,6 +484,87 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     marginBottom: spacing.sm,
+    width: '100%',
+  },
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    maxHeight: '85%',
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xl,
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: spacing.md,
+  },
+  sheetTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  sheetSubtitle: {
+    fontSize: fontSize.sm,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  sheetList: {
+    flexGrow: 0,
+  },
+  prizeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  prizeNumber: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  prizeNumberText: {
+    color: '#FFFFFF',
+    fontSize: fontSize.sm,
+    fontWeight: '800',
+  },
+  prizeEmoji: {
+    fontSize: 22,
+    marginHorizontal: spacing.sm,
+  },
+  prizeInfo: {
+    flex: 1,
+  },
+  prizeTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+  },
+  prizeOutcome: {
+    fontSize: fontSize.xs,
+    marginTop: 2,
+  },
+  prizeRarity: {
+    borderRadius: radius.round,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    marginLeft: spacing.sm,
+  },
+  sheetClose: {
+    marginTop: spacing.sm,
     width: '100%',
   },
 });
