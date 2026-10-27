@@ -1385,6 +1385,7 @@ const ruRaw = {
     item_fy_big_goal: 'Довести до конца крупную совместную цель',
     item_fy_big_project: 'Завершить большой совместный проект',
     item_fy_family_celebration: 'Организовать важный семейный праздник',
+    alreadySubmitted: "Это задание уже отправлено на подтверждение или выполнено.",
   },
   roulette: {
     hubTitle: 'Рулетка',

@@ -1385,6 +1385,7 @@ export const uz: TranslationDictionary = {
     item_fy_big_goal: "Katta umumiy maqsadni yakunlang",
     item_fy_big_project: 'Katta umumiy loyihani yakunlang',
     item_fy_family_celebration: 'Muhim oilaviy bayramni tashkil qiling',
+    alreadySubmitted: "Bu vazifa allaqachon tasdiqlashga yuborilgan yoki bajarilgan.",
   },
   roulette: {
     hubTitle: 'Ruletka',

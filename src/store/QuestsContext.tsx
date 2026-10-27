@@ -15,7 +15,9 @@ interface QuestsValue {
   bonusClaims: DbQuestBonusClaim[];
   customItems: DbQuestCustomItem[];
   hiddenItems: DbQuestHiddenItem[];
-  completeItem: (period: QuestPeriod, periodKey: string, itemKey: string, title: string, points: number) => Promise<boolean>;
+  // 'sent' = new request for the partner, 'duplicate' = already submitted or
+  // done (server returned false), 'error' = failed (error is set).
+  completeItem: (period: QuestPeriod, periodKey: string, itemKey: string, title: string, points: number) => Promise<'sent' | 'duplicate' | 'error'>;
   claimBonus: (period: QuestPeriod, periodKey: string, milestone: number, bonusPoints: number, title: string) => Promise<boolean>;
   addCustomItem: (period: QuestPeriod, periodKey: string, title: string, points: number) => Promise<boolean>;
   // Hides a standard item (for good, not just this period) and puts a
@@ -99,15 +101,15 @@ export const QuestsProvider = ({ children }: { children: React.ReactNode }) => {
       customItems,
       hiddenItems,
       completeItem: async (period, periodKey, itemKey, title, points) => {
-        if (!coupleId || !userId) return false;
+        if (!coupleId || !userId) return 'error';
         setError(null);
         try {
           const ok = await questsService.completeQuestItem({ coupleId, period, periodKey, itemKey, title, points });
-          if (ok) await refresh();
-          return ok;
+          await refresh();
+          return ok ? 'sent' : 'duplicate';
         } catch (e) {
           setError(friendlyMessage(toServiceError(e)));
-          return false;
+          return 'error';
         }
       },
       claimBonus: async (period, periodKey, milestone, bonusPoints, title) => {

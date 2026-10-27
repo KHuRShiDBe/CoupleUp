@@ -160,10 +160,25 @@ export const RewardsScreen = () => {
 
   const progressFillWidth = progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
 
+  // Submitting a quest = a pending action_request for the partner
+  // (complete_quest_item). Guarded against double taps; after the call both
+  // the quest list AND the couple's action requests are reloaded, so the
+  // button flips to "awaiting approval" even if realtime lags. A `false`
+  // from the server (already submitted / already done) is now shown.
+  const [submittingKey, setSubmittingKey] = useState<string | null>(null);
+  const [questNotice, setQuestNotice] = useState<string | null>(null);
   const handleCompleteQuest = async (item: DisplayQuest) => {
-    if (item.completed || item.pending) return;
-    haptics.success();
-    await quests.completeItem(period, periodKey, item.key, item.title, item.points);
+    if (item.completed || item.pending || submittingKey) return;
+    setSubmittingKey(item.key);
+    setQuestNotice(null);
+    try {
+      const result = await quests.completeItem(period, periodKey, item.key, item.title, item.points);
+      await sync.refresh();
+      if (result === 'sent') haptics.success();
+      else if (result === 'duplicate') setQuestNotice(t('quests.alreadySubmitted'));
+    } finally {
+      setSubmittingKey(null);
+    }
   };
 
   const handleClaimMilestone = async (count: number, points: number) => {
@@ -224,6 +239,8 @@ export const RewardsScreen = () => {
       <ScreenHeader title={t('rewards.title')} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
       {!!sync.error && <BackendStatusBanner message={sync.error} onRetry={sync.clearError} />}
+      {!!quests.error && <BackendStatusBanner message={quests.error} onRetry={quests.clearError} />}
+      {!!questNotice && <BackendStatusBanner message={questNotice} onRetry={() => setQuestNotice(null)} />}
       <View style={[styles.balance, shadow.soft, { backgroundColor: colors.primary }]}>
         <Text style={[styles.balanceLabel, { color: colors.textOnPrimary }]}>{t('rewards.balanceLabel')}</Text>
         <Text style={[styles.balanceValue, { color: colors.textOnPrimary }]}>{sync.myStats.balance}</Text>
@@ -303,7 +320,13 @@ export const RewardsScreen = () => {
           ) : item.pending ? (
             <Text style={[styles.questPendingLabel, { color: colors.textSecondary }]}>{t('quests.pendingApproval')}</Text>
           ) : (
-            <PrimaryButton label={t('quests.markDone')} onPress={() => handleCompleteQuest(item)} style={styles.questButton} />
+            <PrimaryButton
+              label={t('quests.markDone')}
+              onPress={() => handleCompleteQuest(item)}
+              loading={submittingKey === item.key}
+              disabled={!!submittingKey}
+              style={styles.questButton}
+            />
           )}
         </View>
       ))}
