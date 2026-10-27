@@ -20,20 +20,20 @@ export const addWishlistItem = async (input: {
   priceUsd?: number;
   // 1 = one hour, 24 = one day, null = no deadline (migration 0048).
   deadlineHours: number | null;
+  // Idempotency key: a retried request returns the same wish and never
+  // charges the deadline surcharge twice (migration 0049).
+  clientRequestId: string;
 }): Promise<DbWishlistItem> => {
   if (!isSupabaseConfigured) throw new ServiceError('Backend не настроен', 'NOT_CONFIGURED');
-  const { data, error } = await supabase
-    .from('wishlist_items')
-    .insert({
-      couple_id: input.coupleId,
-      created_by: input.createdBy,
-      title: input.title,
-      price_usd: input.priceUsd,
-      // priority column keeps its DB default; the app uses deadlines now.
-      ...(input.deadlineHours != null ? { deadline_hours: input.deadlineHours } : {}),
-    })
-    .select()
-    .single();
+  // create_wish inserts the wish and debits the one-time deadline surcharge
+  // (1 h: 50 points, 24 h: 20 points, none: free) in one transaction.
+  const { data, error } = await supabase.rpc('create_wish', {
+    p_couple_id: input.coupleId,
+    p_title: input.title,
+    p_price_usd: input.priceUsd ?? null,
+    p_deadline_hours: input.deadlineHours,
+    p_client_request_id: input.clientRequestId,
+  });
   if (error) throw new ServiceError(error.message);
   return data as DbWishlistItem;
 };
@@ -61,8 +61,8 @@ export const respondWishCompletion = async (id: string, approve: boolean): Promi
   return data as DbWishlistItem;
 };
 
-// Migration 0048: the author marks their own active wish as important for
-// 1 BOND (debited once by the server; anti-abuse limits enforced there).
+// Migration 0048/0049: the author marks their own active wish as important
+// for a fixed 0.5 BOND (debited once by the server; anti-abuse limits enforced there).
 export const makeWishImportant = async (id: string): Promise<DbWishlistItem> => {
   if (!isSupabaseConfigured) throw new ServiceError('Backend не настроен', 'NOT_CONFIGURED');
   const { data, error } = await supabase.rpc('make_wish_important', { p_item_id: id });

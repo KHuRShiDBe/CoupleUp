@@ -616,3 +616,23 @@ export const subscribeToChat = (coupleId: string, onChange: () => void): (() => 
     supabase.removeChannel(channel);
   };
 };
+
+// Shared couple board (migration 0050). DELETE is listened to unfiltered:
+// Realtime never delivers DELETE events to a filtered subscription.
+export const subscribeToBoard = (coupleId: string, onChange: () => void): (() => void) => {
+  if (!isSupabaseConfigured) return () => {};
+
+  const channel = supabase
+    .channel(`board-${coupleId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'couple_board_items', filter: `couple_id=eq.${coupleId}` },
+      () => onChange(),
+    )
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'couple_board_items' }, () => onChange())
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};

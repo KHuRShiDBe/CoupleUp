@@ -519,6 +519,8 @@ export interface DbWishlistItem {
   is_important?: boolean;
   important_at?: string | null;
   important_seen_at?: string | null;
+  // Migration 0049: one-time deadline surcharge paid at creation (points).
+  deadline_fee_points?: number;
 }
 
 export type DbWishlistStatus = 'active' | 'pending' | 'done';
@@ -757,3 +759,20 @@ export interface DbReminderDelivery {
   status: ReminderDeliveryStatus;
   created_at: string;
 }
+
+// Shared couple board (migration 0050). Coordinates are normalised 0..1.
+export type BoardColor = 'red' | 'blue' | 'green';
+export type BoardStrokeData = { points: [number, number][] };
+export type BoardTextData = { x: number; y: number; text: string };
+
+export interface DbBoardItem {
+  id: string;
+  couple_id: string;
+  author_id: string | null;
+  kind: 'stroke' | 'eraser' | 'text';
+  color: BoardColor | 'eraser';
+  data: BoardStrokeData | BoardTextData;
+  created_at: string;
+}
+
+export type DbBoardItemInsert = Omit<DbBoardItem, 'id' | 'created_at'>;

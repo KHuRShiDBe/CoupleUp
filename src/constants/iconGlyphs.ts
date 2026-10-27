@@ -34,6 +34,7 @@ export const ICON_GLYPHS: Record<IconName, keyof typeof Ionicons.glyphMap> = {
   roulette: 'pie-chart-outline',
   savings: 'wallet-outline',
   wishlist: 'heart-outline',
+  board: 'brush-outline',
   // Same heart family as `wishlist`, half-filled so the two wishlist cards
   // (mine vs partner's) are still visually distinguishable at a glance.
   partnerWishlist: 'heart-half-outline',

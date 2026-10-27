@@ -14,13 +14,13 @@ interface WishlistValue {
   items: DbWishlistItem[];
   // Resolves true only once the row is saved; false if there is no couple
   // yet or the insert failed (error is then set).
-  addItem: (input: { title: string; priceUsd?: number; deadlineHours: number | null }) => Promise<boolean>;
+  addItem: (input: { title: string; priceUsd?: number; deadlineHours: number | null; clientRequestId: string }) => Promise<boolean>;
   removeItem: (id: string) => Promise<void>;
   // Partner marks a wish as fulfilled (waits for the author's confirmation).
   requestCompletion: (id: string) => Promise<void>;
   // Author confirms or declines a pending completion.
   respondCompletion: (id: string, approve: boolean) => Promise<void>;
-  // Author marks their own wish important (1 BOND). Resolves true on success.
+  // Author marks their own wish important (0.5 BOND). Resolves true on success.
   makeImportant: (id: string) => Promise<boolean>;
   // Partner confirms they have read an important wish.
   acknowledgeImportant: (id: string) => Promise<void>;

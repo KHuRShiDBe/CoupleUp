@@ -246,6 +246,14 @@ export const HomeScreen = ({ navigation }: Props) => {
             iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
             labelStyle={HOME_CARD_LABEL_STYLE}
           />
+          <QuickActionCard
+            label={t('board.title')}
+            icon="board"
+            onPress={() => navigation.navigate('Board')}
+            cardStyle={HOME_CARD_STYLE}
+            iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
+            labelStyle={HOME_CARD_LABEL_STYLE}
+          />
         </View>
       </ScrollView>
 

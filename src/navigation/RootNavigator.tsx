@@ -42,6 +42,7 @@ import { BondRateScreen } from '../screens/bond/BondRateScreen';
 import { BondCollectionScreen } from '../screens/bond/BondCollectionScreen';
 import { MonthlySummaryScreen } from '../screens/bond/MonthlySummaryScreen';
 import { WishlistScreen } from '../screens/wishlist/WishlistScreen';
+import { BoardScreen } from '../screens/board/BoardScreen';
 import { ComplimentsScreen } from '../screens/compliments/ComplimentsScreen';
 import { MomentsScreen } from '../screens/moments/MomentsScreen';
 import { ImportantDatesScreen } from '../screens/dates/ImportantDatesScreen';
@@ -130,6 +131,7 @@ export const RootNavigator = () => {
         <Stack.Screen name="BondCollection" component={BondCollectionScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="MonthlySummary" component={MonthlySummaryScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="Wishlist" component={WishlistScreen} options={{ presentation: 'card' }} />
+        <Stack.Screen name="Board" component={BoardScreen} options={{ presentation: 'card', gestureEnabled: false }} />
         <Stack.Screen name="Compliments" component={ComplimentsScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="Moments" component={MomentsScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="ImportantDates" component={ImportantDatesScreen} options={{ presentation: 'card' }} />

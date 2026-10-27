@@ -20,6 +20,8 @@ import { useTranslation } from '../../localization/useTranslation';
 import { formatBond, formatUsd } from '../../utils/bond';
 import { ConfirmationModal } from '../../components/common/ConfirmationModal';
 import { DbWishlistItem } from '../../types/database';
+import { wishDeadlineFeePoints } from '../../constants/wishFees';
+import { generateRequestId } from '../../utils/requestId';
 import { haptics } from '../../utils/haptics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Wishlist'>;
@@ -66,6 +68,9 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
   const [title, setTitle] = useState('');
   const [priceUsd, setPriceUsd] = useState('');
   const [deadline, setDeadline] = useState<1 | 24 | null>(null);
+  // Kept across retries of the same submission so the server never charges
+  // the deadline fee twice; cleared only after a successful save.
+  const [addRequestId, setAddRequestId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [importantTarget, setImportantTarget] = useState<DbWishlistItem | null>(null);
 
@@ -105,11 +110,19 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
     setSubmitting(true);
     try {
       // Keep what the user typed if saving failed.
-      const saved = await wishlist.addItem({ title: title.trim(), priceUsd: price, deadlineHours: deadline });
+      const requestId = addRequestId ?? generateRequestId();
+      setAddRequestId(requestId);
+      const saved = await wishlist.addItem({
+        title: title.trim(),
+        priceUsd: price,
+        deadlineHours: deadline,
+        clientRequestId: requestId,
+      });
       if (saved) {
         setTitle('');
         setPriceUsd('');
         setDeadline(null);
+        setAddRequestId(null);
       }
     } finally {
       setSubmitting(false);
@@ -168,6 +181,26 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
                 </Pressable>
               ))}
             </View>
+            {(() => {
+              // Base price (1 BOND ~= $1, never multiplied) + one-time deadline fee.
+              const baseBond = parseFloat(priceUsd.replace(',', '.')) || 0;
+              const feeBond = bond.toBond(wishDeadlineFeePoints(deadline));
+              return (
+                <View style={styles.costBox}>
+                  <Text style={[styles.costLine, { color: colors.textSecondary }]}>
+                    {t('wishlist.costBase', { bond: formatBond(baseBond) })}
+                  </Text>
+                  {feeBond > 0 && (
+                    <Text style={[styles.costLine, { color: colors.textSecondary }]}>
+                      {t('wishlist.costDeadlineFee', { bond: formatBond(feeBond) })}
+                    </Text>
+                  )}
+                  <Text style={[styles.costTotal, { color: colors.text }]}>
+                    {t('wishlist.costTotal', { bond: formatBond(baseBond + feeBond) })}
+                  </Text>
+                </View>
+              );
+            })()}
             <PrimaryButton
               label={t('wishlist.addButton')}
               onPress={handleAdd}
@@ -209,6 +242,11 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
                       ≈ {formatBond(bond.toBond(priceUsdValue))} BOND · ≈ {Math.round(points)} {t('bond.points')}
                     </Text>
                   </>
+                )}
+                {!!item.deadline_fee_points && (
+                  <Text style={[styles.cardEquivalent, { color: colors.textSecondary }]}>
+                    {t('wishlist.deadlineFeePaid', { bond: formatBond(bond.toBond(item.deadline_fee_points)) })}
+                  </Text>
                 )}
                 <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>
                   {item.created_by === auth.session?.user?.id ? t('promises.me') : t('promises.partner')}
@@ -385,6 +423,17 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     alignSelf: 'flex-start',
+  },
+  costBox: {
+    marginBottom: spacing.sm,
+  },
+  costLine: {
+    fontSize: fontSize.xs,
+  },
+  costTotal: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    marginTop: 2,
   },
   statusText: {
     fontSize: fontSize.sm,

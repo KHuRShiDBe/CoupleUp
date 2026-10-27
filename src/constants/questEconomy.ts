@@ -37,10 +37,11 @@ export const QUEST_BASE_POINTS: Record<QuestPeriod, Record<QuestDifficulty, numb
   yearly: { easy: 150, medium: 250, hard: 400, veryHard: 500 },
 };
 
-// Milestone bonuses -- daily AND weekly only. Cumulative, each paid at most
+// Milestone bonuses -- every period (month/year since migration 0051). Cumulative, each paid at most
 // once per (user, period, period_key), immediately (no extra approval: the
 // counted items were already confirmed by the partner). Must match
-// claim_quest_bonus (migration 0048). 20 + 30 + 50 = 100 points per period.
+// claim_quest_bonus (migration 0051): day/week 20/30/50, month 40/60/100,
+// year 80/120/200 points.
 export const QUEST_BONUS_MILESTONES_BY_PERIOD: Partial<Record<QuestPeriod, { count: number; points: number }[]>> = {
   daily: [
     { count: 5, points: 20 },
@@ -52,9 +53,19 @@ export const QUEST_BONUS_MILESTONES_BY_PERIOD: Partial<Record<QuestPeriod, { cou
     { count: 7, points: 30 },
     { count: 10, points: 50 },
   ],
+  monthly: [
+    { count: 5, points: 40 },
+    { count: 7, points: 60 },
+    { count: 10, points: 100 },
+  ],
+  yearly: [
+    { count: 5, points: 80 },
+    { count: 7, points: 120 },
+    { count: 10, points: 200 },
+  ],
 };
 
-export const QUEST_BONUS_PERIODS: QuestPeriod[] = ['daily', 'weekly'];
+export const QUEST_BONUS_PERIODS: QuestPeriod[] = ['daily', 'weekly', 'monthly', 'yearly'];
 
 // Free quests per period == the system-generated count for that period
 // (10 everywhere). The next user-added custom item is the first

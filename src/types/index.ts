@@ -26,7 +26,8 @@ export type IconName =
   | 'roulette'
   | 'savings'
   | 'wishlist'
-  | 'partnerWishlist';
+  | 'partnerWishlist'
+  | 'board';
 
 export interface ActionHistoryItem {
   id: string;

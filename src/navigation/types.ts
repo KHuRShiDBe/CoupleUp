@@ -40,6 +40,7 @@ export type RootStackParamList = {
   BondRate: undefined;
   BondCollection: undefined;
   Wishlist: { owner?: 'me' | 'partner' } | undefined;
+  Board: undefined;
   MonthlySummary: undefined;
   Compliments: undefined;
   Moments: undefined;
