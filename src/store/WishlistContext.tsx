@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { AppState } from 'react-native';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { useCoupleSync } from './CoupleSyncContext';
@@ -14,7 +15,9 @@ interface WishlistValue {
   items: DbWishlistItem[];
   // Resolves true only once the row is saved; false if there is no couple
   // yet or the insert failed (error is then set).
-  addItem: (input: { title: string; priceUsd?: number; deadlineHours: number | null; clientRequestId: string }) => Promise<boolean>;
+  addItem: (input: { title: string; offerPoints: number; deadlineHours: number | null; clientRequestId: string }) => Promise<boolean>;
+  // Accept / decline / counter the current price offer (migration 0052).
+  respondOffer: (id: string, action: 'accept' | 'decline' | 'counter', counterPoints?: number) => Promise<boolean>;
   removeItem: (id: string) => Promise<void>;
   // Partner marks a wish as fulfilled (waits for the author's confirmation).
   requestCompletion: (id: string) => Promise<void>;
@@ -59,6 +62,27 @@ export const WishlistProvider = ({ children }: { children: React.ReactNode }) =>
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Settle my wish-reward debt (migration 0052) when the app opens and when
+  // it returns to the foreground; the server caps it at 500 points a day.
+  useEffect(() => {
+    if (!coupleId || !userId) return;
+    const settle = () => {
+      wishlistService
+        .settleMyWishPayouts()
+        .then((paid) => {
+          if (paid > 0) refresh();
+        })
+        .catch(() => {
+          // Retried on the next open / foreground; nightly cron also settles.
+        });
+    };
+    settle();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') settle();
+    });
+    return () => sub.remove();
+  }, [coupleId, userId, refresh]);
 
   useEffect(() => {
     if (!coupleId) return;
@@ -109,6 +133,17 @@ export const WishlistProvider = ({ children }: { children: React.ReactNode }) =>
           setItems((prev) => prev.map((i) => (i.id === row.id ? row : i)));
         } catch (e) {
           setError(friendlyMessage(toServiceError(e)));
+        }
+      },
+      respondOffer: async (id, action, counterPoints) => {
+        setError(null);
+        try {
+          const row = await wishlistService.respondWishOffer(id, action, counterPoints);
+          setItems((prev) => prev.map((i) => (i.id === row.id ? row : i)));
+          return true;
+        } catch (e) {
+          setError(friendlyMessage(toServiceError(e)));
+          return false;
         }
       },
       makeImportant: async (id: string) => {

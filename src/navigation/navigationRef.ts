@@ -23,6 +23,7 @@ export const routeForNotificationType = (type: DbNotificationType): keyof RootSt
     case 'wish_completion_request':
     case 'wish_completion_response':
     case 'wish_important':
+    case 'wish_offer':
       return 'Wishlist';
     case 'prize_use_request':
       return 'Savings';

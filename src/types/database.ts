@@ -459,7 +459,8 @@ export type DbNotificationType =
   | 'wish_completion_request'
   | 'wish_completion_response'
   | 'prize_use_request'
-  | 'wish_important';
+  | 'wish_important'
+  | 'wish_offer';
 
 export interface DbNotification {
   id: string;
@@ -521,6 +522,17 @@ export interface DbWishlistItem {
   important_seen_at?: string | null;
   // Migration 0049: one-time deadline surcharge paid at creation (points).
   deadline_fee_points?: number;
+  // Migration 0052: bargaining over the reward (points; 100 = 1 BOND).
+  offer_points?: number | null;
+  offer_by?: string | null;
+  agreed_points?: number | null;
+  // 'none' = legacy wish (no payout), 'open' = offer awaiting an answer.
+  negotiation_status?: 'none' | 'open' | 'declined' | 'agreed';
+  paid_at?: string | null;
+  // Credited to the executor so far / still owed (paid later within the
+  // 500-point daily cap).
+  payout_points?: number | null;
+  payout_pending_points?: number;
 }
 
 export type DbWishlistStatus = 'active' | 'pending' | 'done';

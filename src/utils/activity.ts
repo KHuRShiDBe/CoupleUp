@@ -28,6 +28,7 @@ export const ACTIVITY_CATEGORY_BY_TYPE: Record<DbNotificationType, ActivityCateg
   wish_completion_response: 'requests',
   prize_use_request: 'requests',
   wish_important: 'requests',
+  wish_offer: 'requests',
 };
 
 export const ACTIVITY_ICON_BY_TYPE: Record<DbNotificationType, IconName> = {
@@ -52,4 +53,5 @@ export const ACTIVITY_ICON_BY_TYPE: Record<DbNotificationType, IconName> = {
   wish_completion_response: 'wishlist',
   prize_use_request: 'rewards',
   wish_important: 'wishlist',
+  wish_offer: 'wishlist',
 };

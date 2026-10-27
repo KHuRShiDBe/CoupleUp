@@ -17,7 +17,8 @@ export const addWishlistItem = async (input: {
   coupleId: string;
   createdBy: string;
   title: string;
-  priceUsd?: number;
+  // Offered reward in points (1..500; 100 points = 1 BOND), migration 0052.
+  offerPoints: number;
   // 1 = one hour, 24 = one day, null = no deadline (migration 0048).
   deadlineHours: number | null;
   // Idempotency key: a retried request returns the same wish and never
@@ -30,7 +31,7 @@ export const addWishlistItem = async (input: {
   const { data, error } = await supabase.rpc('create_wish', {
     p_couple_id: input.coupleId,
     p_title: input.title,
-    p_price_usd: input.priceUsd ?? null,
+    p_offer_points: input.offerPoints,
     p_deadline_hours: input.deadlineHours,
     p_client_request_id: input.clientRequestId,
   });
@@ -75,4 +76,31 @@ export const acknowledgeWishImportant = async (id: string): Promise<void> => {
   if (!isSupabaseConfigured) return;
   const { error } = await supabase.rpc('acknowledge_wish_important', { p_item_id: id });
   if (error) throw new ServiceError(error.message);
+};
+
+// Migration 0052: answer the current price offer. Only the side that did not
+// make it may accept/decline; counter flips the turn. An agreed price is
+// fixed on the server and paid once, author -> executor, on confirmation.
+export const respondWishOffer = async (
+  id: string,
+  action: 'accept' | 'decline' | 'counter',
+  counterPoints?: number,
+): Promise<DbWishlistItem> => {
+  if (!isSupabaseConfigured) throw new ServiceError('Backend не настроен', 'NOT_CONFIGURED');
+  const { data, error } = await supabase.rpc('respond_wish_offer', {
+    p_item_id: id,
+    p_action: action,
+    p_counter_points: counterPoints ?? null,
+  });
+  if (error) throw new ServiceError(error.message);
+  return data as DbWishlistItem;
+};
+
+// Migration 0052: pays MY pending wish rewards within today's 500-point cap.
+// Safe to call any time (server locks per user; never pays twice).
+export const settleMyWishPayouts = async (): Promise<number> => {
+  if (!isSupabaseConfigured) return 0;
+  const { data, error } = await supabase.rpc('settle_my_wish_payouts');
+  if (error) throw new ServiceError(error.message);
+  return (data as number) ?? 0;
 };

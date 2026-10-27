@@ -66,7 +66,10 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
   const screenTitle = owner === 'me' ? t('home.myWishes') : owner === 'partner' ? t('home.partnerWishes') : t('wishlist.title');
 
   const [title, setTitle] = useState('');
-  const [priceUsd, setPriceUsd] = useState('');
+  const [offerPoints, setOfferPoints] = useState('');
+  // Counter-offer input per wish (migration 0052).
+  const [counterFor, setCounterFor] = useState<string | null>(null);
+  const [counterValue, setCounterValue] = useState('');
   const [deadline, setDeadline] = useState<1 | 24 | null>(null);
   // Kept across retries of the same submission so the server never charges
   // the deadline fee twice; cleared only after a successful save.
@@ -104,8 +107,8 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
   };
 
   const handleAdd = async () => {
-    const price = parseFloat(priceUsd.replace(',', '.'));
-    if (!title.trim() || !Number.isFinite(price) || price <= 0 || submitting) return;
+    const offer = parseInt(offerPoints, 10);
+    if (!title.trim() || !Number.isFinite(offer) || offer < 1 || offer > 500 || submitting) return;
     haptics.confirm();
     setSubmitting(true);
     try {
@@ -114,13 +117,13 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
       setAddRequestId(requestId);
       const saved = await wishlist.addItem({
         title: title.trim(),
-        priceUsd: price,
+        offerPoints: offer,
         deadlineHours: deadline,
         clientRequestId: requestId,
       });
       if (saved) {
         setTitle('');
-        setPriceUsd('');
+        setOfferPoints('');
         setDeadline(null);
         setAddRequestId(null);
       }
@@ -146,6 +149,15 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {!!wishlist.error && <BackendStatusBanner message={wishlist.error} onRetry={wishlist.clearError} />}
         {!hasCouple && <BackendStatusBanner message={t('compliments.noPartner')} />}
+        {(() => {
+          // What I (as executor) am still owed from fulfilled wishes.
+          const owed = wishlist.items
+            .filter((w) => w.completion_requested_by === myId && w.status === 'done')
+            .reduce((sum, w) => sum + (w.payout_pending_points ?? 0), 0);
+          return owed > 0 ? (
+            <Text style={[styles.statusText, { color: colors.primary }]}>{t('wishlist.myDebtTotal', { points: owed })}</Text>
+          ) : null;
+        })()}
         {owner !== 'partner' && (
           <View style={[styles.form, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TextInput
@@ -156,10 +168,10 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
               style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
             />
             <TextInput
-              value={priceUsd}
-              onChangeText={(v) => setPriceUsd(v.replace(/[^0-9.,]/g, ''))}
-              placeholder={t('wishlist.pricePlaceholder')}
-              keyboardType="decimal-pad"
+              value={offerPoints}
+              onChangeText={(v) => setOfferPoints(v.replace(/[^0-9]/g, '').slice(0, 3))}
+              placeholder={t('wishlist.rewardPlaceholder')}
+              keyboardType="number-pad"
               placeholderTextColor={colors.textSecondary}
               style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
             />
@@ -182,21 +194,18 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
               ))}
             </View>
             {(() => {
-              // Base price (1 BOND ~= $1, never multiplied) + one-time deadline fee.
-              const baseBond = parseFloat(priceUsd.replace(',', '.')) || 0;
-              const feeBond = bond.toBond(wishDeadlineFeePoints(deadline));
+              // Two separate amounts, never summed into one "reward":
+              // the executor's reward (paid after completion) and the
+              // urgency fee (charged now, goes to nobody).
+              const reward = parseInt(offerPoints, 10) || 0;
+              const fee = wishDeadlineFeePoints(deadline);
               return (
                 <View style={styles.costBox}>
-                  <Text style={[styles.costLine, { color: colors.textSecondary }]}>
-                    {t('wishlist.costBase', { bond: formatBond(baseBond) })}
-                  </Text>
-                  {feeBond > 0 && (
-                    <Text style={[styles.costLine, { color: colors.textSecondary }]}>
-                      {t('wishlist.costDeadlineFee', { bond: formatBond(feeBond) })}
-                    </Text>
-                  )}
                   <Text style={[styles.costTotal, { color: colors.text }]}>
-                    {t('wishlist.costTotal', { bond: formatBond(baseBond + feeBond) })}
+                    {t('wishlist.costReward', { points: reward })}
+                  </Text>
+                  <Text style={[styles.costLine, { color: colors.textSecondary }]}>
+                    {fee > 0 ? t('wishlist.costDeadlinePoints', { points: fee }) : t('wishlist.costNoUrgencyFee')}
                   </Text>
                 </View>
               );
@@ -204,7 +213,7 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
             <PrimaryButton
               label={t('wishlist.addButton')}
               onPress={handleAdd}
-              disabled={!hasCouple || !title.trim() || !priceUsd.trim() || submitting}
+              disabled={!hasCouple || !title.trim() || !offerPoints.trim() || submitting}
               loading={submitting}
             />
           </View>
@@ -220,8 +229,10 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
             const isPending = item.status === 'pending';
             const busy = busyId === item.id;
             const dl = deadlineInfo(item);
-            const priceUsdValue = item.price_usd ?? 0;
-            const points = bond.toPoints(priceUsdValue);
+            const nego = item.negotiation_status ?? 'none';
+            const myTurn = nego === 'open' && item.offer_by !== myId;
+            const canCounter = myTurn || (nego === 'declined' && isMine);
+            const canMarkDone = nego === 'agreed' || nego === 'none';
             return (
               <View
                 key={item.id}
@@ -235,18 +246,84 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
                     <Text style={styles.priorityBadgeText}>{dl.text}</Text>
                   </View>
                 </View>
-                {item.price_usd != null && (
-                  <>
-                    <Text style={[styles.cardPrice, { color: colors.primary }]}>${priceUsdValue.toFixed(2)}</Text>
-                    <Text style={[styles.cardEquivalent, { color: colors.textSecondary }]}>
-                      ≈ {formatBond(bond.toBond(priceUsdValue))} BOND · ≈ {Math.round(points)} {t('bond.points')}
-                    </Text>
-                  </>
+                {/* Price / bargaining state (migration 0052), in points. */}
+                {nego === 'agreed' && (
+                  <Text style={[styles.cardPrice, { color: colors.success }]}>
+                    {t('wishlist.offerAgreed', { points: item.agreed_points ?? 0 })}
+                  </Text>
+                )}
+                {nego === 'open' && (
+                  <Text style={[styles.cardPrice, { color: colors.primary }]}>
+                    {item.offer_by === myId
+                      ? t('wishlist.offerFromMe', { points: item.offer_points ?? 0 })
+                      : t('wishlist.offerFromPartner', { points: item.offer_points ?? 0 })}
+                  </Text>
+                )}
+                {nego === 'declined' && (
+                  <Text style={[styles.cardPrice, { color: colors.danger }]}>
+                    {t('wishlist.offerDeclined', { points: item.offer_points ?? 0 })}
+                  </Text>
+                )}
+                {nego === 'none' && item.offer_points != null && (
+                  <Text style={[styles.cardPrice, { color: colors.primary }]}>
+                    {t('wishlist.legacyPrice', { points: item.offer_points })}
+                  </Text>
                 )}
                 {!!item.deadline_fee_points && (
                   <Text style={[styles.cardEquivalent, { color: colors.textSecondary }]}>
                     {t('wishlist.deadlineFeePaid', { bond: formatBond(bond.toBond(item.deadline_fee_points)) })}
                   </Text>
+                )}
+                {!isPending && myTurn && (
+                  <View style={styles.actionRow}>
+                    <PrimaryButton
+                      label={t('wishlist.offerAccept')}
+                      onPress={() => runForItem(item.id, async () => { await wishlist.respondOffer(item.id, 'accept'); })}
+                      disabled={!!busyId}
+                      style={styles.actionButton}
+                    />
+                    <PrimaryButton
+                      label={t('wishlist.offerDecline')}
+                      variant="outline"
+                      onPress={() => runForItem(item.id, async () => { await wishlist.respondOffer(item.id, 'decline'); })}
+                      disabled={!!busyId}
+                      style={styles.actionButton}
+                    />
+                  </View>
+                )}
+                {!isPending && canCounter && (
+                  <View style={[styles.actionRow, styles.counterRow]}>
+                    <TextInput
+                      value={counterFor === item.id ? counterValue : ''}
+                      onFocus={() => {
+                        if (counterFor !== item.id) {
+                          setCounterFor(item.id);
+                          setCounterValue('');
+                        }
+                      }}
+                      onChangeText={(v) => {
+                        setCounterFor(item.id);
+                        setCounterValue(v.replace(/[^0-9]/g, '').slice(0, 3));
+                      }}
+                      placeholder={t('wishlist.offerCounterPlaceholder')}
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="number-pad"
+                      style={[styles.input, styles.counterInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
+                    />
+                    <PrimaryButton
+                      label={t('wishlist.offerCounter')}
+                      variant="outline"
+                      onPress={() => {
+                        const v = parseInt(counterValue, 10);
+                        if (counterFor !== item.id || !Number.isFinite(v)) return;
+                        runForItem(item.id, async () => {
+                          if (await wishlist.respondOffer(item.id, 'counter', v)) setCounterValue('');
+                        });
+                      }}
+                      disabled={!!busyId || counterFor !== item.id || !counterValue}
+                      style={styles.actionButton}
+                    />
+                  </View>
                 )}
                 <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>
                   {item.created_by === auth.session?.user?.id ? t('promises.me') : t('promises.partner')}
@@ -274,7 +351,10 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
                     />
                   </View>
                 )}
-                {!isPending && !isMine && (
+                {!isPending && !isMine && !canMarkDone && (
+                  <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>{t('wishlist.fixPriceFirst')}</Text>
+                )}
+                {!isPending && !isMine && canMarkDone && (
                   <PrimaryButton
                     label={t('wishlist.markDone')}
                     onPress={() => runForItem(item.id, () => wishlist.requestCompletion(item.id))}
@@ -321,6 +401,8 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
                 </View>
                 <Text style={[styles.statusText, { color: colors.success }]}>
                   {t('wishlist.doneStatus')}
+                  {item.paid_at ? ` · ${t('wishlist.paidOut', { points: item.payout_points ?? 0 })}` : ''}
+                  {item.payout_pending_points ? ` · ${t('wishlist.debtLeft', { points: item.payout_pending_points })}` : ''}
                   {item.completed_at ? ` · ${new Date(item.completed_at).toLocaleDateString()}` : ''}
                 </Text>
                 <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>
@@ -423,6 +505,14 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     alignSelf: 'flex-start',
+  },
+  counterRow: {
+    alignItems: 'center',
+    marginTop: spacing.xs,
+  },
+  counterInput: {
+    flex: 1,
+    marginBottom: 0,
   },
   costBox: {
     marginBottom: spacing.sm,
