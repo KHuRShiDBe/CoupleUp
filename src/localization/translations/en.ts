@@ -1385,6 +1385,7 @@ export const en: TranslationDictionary = {
     item_fy_big_project: 'Finish a big shared project',
     item_fy_family_celebration: 'Organize an important family celebration',
     alreadySubmitted: "This task is already awaiting approval or done.",
+    submitFailed: "Could not submit the task. Please try again.",
   },
   roulette: {
     hubTitle: 'Roulette',

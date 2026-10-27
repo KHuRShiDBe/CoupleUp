@@ -166,16 +166,24 @@ export const RewardsScreen = () => {
   // button flips to "awaiting approval" even if realtime lags. A `false`
   // from the server (already submitted / already done) is now shown.
   const [submittingKey, setSubmittingKey] = useState<string | null>(null);
-  const [questNotice, setQuestNotice] = useState<string | null>(null);
+  // Shown right under the tapped item (not in the top banner, which is
+  // off-screen once the list is scrolled -- that made a failed or
+  // duplicate tap look like "nothing happens").
+  const [questNotice, setQuestNotice] = useState<{ key: string; text: string } | null>(null);
   const handleCompleteQuest = async (item: DisplayQuest) => {
     if (item.completed || item.pending || submittingKey) return;
     setSubmittingKey(item.key);
     setQuestNotice(null);
     try {
-      const result = await quests.completeItem(period, periodKey, item.key, item.title, item.points);
-      await sync.refresh();
-      if (result === 'sent') haptics.success();
-      else if (result === 'duplicate') setQuestNotice(t('quests.alreadySubmitted'));
+      const { status, message } = await quests.completeItem(period, periodKey, item.key, item.title, item.points);
+      try {
+        await sync.refresh();
+      } catch {
+        // realtime will catch up; the result below is still shown
+      }
+      if (status === 'sent') haptics.success();
+      else if (status === 'duplicate') setQuestNotice({ key: item.key, text: t('quests.alreadySubmitted') });
+      else setQuestNotice({ key: item.key, text: message ?? t('quests.submitFailed') });
     } finally {
       setSubmittingKey(null);
     }
@@ -240,7 +248,6 @@ export const RewardsScreen = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
       {!!sync.error && <BackendStatusBanner message={sync.error} onRetry={sync.clearError} />}
       {!!quests.error && <BackendStatusBanner message={quests.error} onRetry={quests.clearError} />}
-      {!!questNotice && <BackendStatusBanner message={questNotice} onRetry={() => setQuestNotice(null)} />}
       <View style={[styles.balance, shadow.soft, { backgroundColor: colors.primary }]}>
         <Text style={[styles.balanceLabel, { color: colors.textOnPrimary }]}>{t('rewards.balanceLabel')}</Text>
         <Text style={[styles.balanceValue, { color: colors.textOnPrimary }]}>{sync.myStats.balance}</Text>
@@ -327,6 +334,9 @@ export const RewardsScreen = () => {
               disabled={!!submittingKey}
               style={styles.questButton}
             />
+          )}
+          {questNotice?.key === item.key && (
+            <Text style={[styles.questNotice, { color: colors.danger }]}>{questNotice.text}</Text>
           )}
         </View>
       ))}
@@ -448,6 +458,7 @@ const styles = StyleSheet.create({
   },
   questCard: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -483,6 +494,12 @@ const styles = StyleSheet.create({
   questButton: {
     height: 40,
     paddingHorizontal: spacing.md,
+  },
+  questNotice: {
+    width: '100%',
+    marginTop: spacing.sm,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
   },
   questPendingLabel: {
     fontSize: fontSize.xs,

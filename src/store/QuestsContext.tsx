@@ -16,8 +16,15 @@ interface QuestsValue {
   customItems: DbQuestCustomItem[];
   hiddenItems: DbQuestHiddenItem[];
   // 'sent' = new request for the partner, 'duplicate' = already submitted or
-  // done (server returned false), 'error' = failed (error is set).
-  completeItem: (period: QuestPeriod, periodKey: string, itemKey: string, title: string, points: number) => Promise<'sent' | 'duplicate' | 'error'>;
+  // done (server returned false), 'error' = failed -- `message` carries the
+  // exact reason so the screen can show it next to the item.
+  completeItem: (
+    period: QuestPeriod,
+    periodKey: string,
+    itemKey: string,
+    title: string,
+    points: number,
+  ) => Promise<{ status: 'sent' | 'duplicate' | 'error'; message?: string }>;
   claimBonus: (period: QuestPeriod, periodKey: string, milestone: number, bonusPoints: number, title: string) => Promise<boolean>;
   addCustomItem: (period: QuestPeriod, periodKey: string, title: string, points: number) => Promise<boolean>;
   // Hides a standard item (for good, not just this period) and puts a
@@ -101,15 +108,19 @@ export const QuestsProvider = ({ children }: { children: React.ReactNode }) => {
       customItems,
       hiddenItems,
       completeItem: async (period, periodKey, itemKey, title, points) => {
-        if (!coupleId || !userId) return 'error';
+        if (!coupleId || !userId) {
+          return { status: 'error', message: !userId ? 'NOT_SIGNED_IN' : 'NO_COUPLE' };
+        }
         setError(null);
         try {
           const ok = await questsService.completeQuestItem({ coupleId, period, periodKey, itemKey, title, points });
           await refresh();
-          return ok ? 'sent' : 'duplicate';
+          return { status: ok ? 'sent' : 'duplicate' };
         } catch (e) {
-          setError(friendlyMessage(toServiceError(e)));
-          return 'error';
+          const err = toServiceError(e);
+          const friendly = friendlyMessage(err);
+          setError(friendly);
+          return { status: 'error', message: friendly === err.message ? friendly : `${friendly} (${err.message})` };
         }
       },
       claimBonus: async (period, periodKey, milestone, bonusPoints, title) => {

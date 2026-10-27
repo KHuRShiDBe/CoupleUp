@@ -1386,6 +1386,7 @@ export const uz: TranslationDictionary = {
     item_fy_big_project: 'Katta umumiy loyihani yakunlang',
     item_fy_family_celebration: 'Muhim oilaviy bayramni tashkil qiling',
     alreadySubmitted: "Bu vazifa allaqachon tasdiqlashga yuborilgan yoki bajarilgan.",
+    submitFailed: "Vazifani yuborib bo'lmadi. Qaytadan urinib ko'ring.",
   },
   roulette: {
     hubTitle: 'Ruletka',
