@@ -6,7 +6,6 @@ import * as wishlistService from '../services/supabase/wishlistService';
 import { subscribeToWishlist } from '../services/supabase/realtime';
 import { friendlyMessage, toServiceError } from '../services/supabase/errors';
 import { DbWishlistItem } from '../types/database';
-import { WishlistPriority } from '../types';
 
 interface WishlistValue {
   loading: boolean;
@@ -15,12 +14,16 @@ interface WishlistValue {
   items: DbWishlistItem[];
   // Resolves true only once the row is saved; false if there is no couple
   // yet or the insert failed (error is then set).
-  addItem: (input: { title: string; priceUsd?: number; priority: WishlistPriority }) => Promise<boolean>;
+  addItem: (input: { title: string; priceUsd?: number; deadlineHours: number | null }) => Promise<boolean>;
   removeItem: (id: string) => Promise<void>;
   // Partner marks a wish as fulfilled (waits for the author's confirmation).
   requestCompletion: (id: string) => Promise<void>;
   // Author confirms or declines a pending completion.
   respondCompletion: (id: string, approve: boolean) => Promise<void>;
+  // Author marks their own wish important (1 BOND). Resolves true on success.
+  makeImportant: (id: string) => Promise<boolean>;
+  // Partner confirms they have read an important wish.
+  acknowledgeImportant: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -107,6 +110,25 @@ export const WishlistProvider = ({ children }: { children: React.ReactNode }) =>
         } catch (e) {
           setError(friendlyMessage(toServiceError(e)));
         }
+      },
+      makeImportant: async (id: string) => {
+        setError(null);
+        try {
+          const row = await wishlistService.makeWishImportant(id);
+          setItems((prev) => prev.map((i) => (i.id === row.id ? row : i)));
+          return true;
+        } catch (e) {
+          setError(friendlyMessage(toServiceError(e)));
+          return false;
+        }
+      },
+      acknowledgeImportant: async (id: string) => {
+        try {
+          await wishlistService.acknowledgeWishImportant(id);
+        } catch {
+          // Already acknowledged -- the refresh below settles the state.
+        }
+        await refresh();
       },
       refresh,
     }),

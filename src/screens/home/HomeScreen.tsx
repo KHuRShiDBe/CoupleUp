@@ -50,7 +50,7 @@ const PERIOD_CARDS: { period: QuestPeriod; tabKey: TranslationKey; icon: 'period
 ];
 
 // One shared look for every action card on this screen (period card,
-// savings, both wishlist cards, roulette, agreements) -- same height,
+// savings, both wishlist cards, roulette) -- same height,
 // border radius/width, padding, icon size, title size, centered icon+text,
 // same shadow. Passed as overrides into QuickActionCard's own cardStyle/
 // iconWrapStyle/labelStyle props (that component's base style already gives
@@ -90,14 +90,14 @@ export const HomeScreen = ({ navigation }: Props) => {
 
   // Real today's daily-quest completion for the CURRENT user only -- same
   // done/total definition RewardsScreen uses for whoever's signed in. A
-  // person's own quests are drawn from the OTHER role's themed pool (see
-  // questSelection.ts), so "my" pool uses partnerRole, not my own role.
+  // person's own quests come from their OWN role's pool (see
+  // questSelection.ts), worded to the person doing them.
   const dailyPeriodKey = getPeriodKey('daily');
   const myDailyProgress = computeQuestProgress({
     period: 'daily',
     periodKey: dailyPeriodKey,
     coupleId: coupleId ?? '',
-    poolRole: partnerRole,
+    poolRole: role,
     userId: myId,
     progress: quests.progress,
     customItems: quests.customItems,
@@ -246,14 +246,6 @@ export const HomeScreen = ({ navigation }: Props) => {
             iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
             labelStyle={HOME_CARD_LABEL_STYLE}
           />
-          <QuickActionCard
-            label={t('home.agreementsTitle')}
-            icon="tasks"
-            onPress={() => navigation.navigate('Add')}
-            cardStyle={HOME_CARD_STYLE}
-            iconWrapStyle={HOME_CARD_ICON_WRAP_STYLE}
-            labelStyle={HOME_CARD_LABEL_STYLE}
-          />
         </View>
       </ScrollView>
 
@@ -344,7 +336,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   // Single grid for every Home action card (period, savings, both wishlist
-  // cards, roulette, agreements) -- one 2-column layout, one rowGap for every
+  // cards, roulette) -- one 2-column layout, one rowGap for every
   // row, no per-card/per-row margins. Columns stay evenly split via
   // space-between (every card shares the same fixed width), so the
   // horizontal gap is just as uniform as the vertical one.

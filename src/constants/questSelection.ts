@@ -45,5 +45,5 @@ export const getQuestsFor = (
   period: QuestPeriod,
   _periodKey: string,
   _coupleId: string,
-  partnerRole: Role,
-): QuestPoolItem[] => sortByTier(POOLS[period][partnerRole]);
+  doerRole: Role,
+): QuestPoolItem[] => sortByTier(POOLS[period][doerRole]);

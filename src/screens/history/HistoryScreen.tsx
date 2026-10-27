@@ -14,22 +14,12 @@ import { LoadingState } from '../../components/common/LoadingState';
 import { useMockLoading } from '../../hooks/useMockLoading';
 import { useAppStore } from '../../store/AppContext';
 import { useCoupleSync } from '../../store/CoupleSyncContext';
-import { useCoupleOffers } from '../../store/CoupleOffersContext';
 import { useTranslation, TranslationKey } from '../../localization/useTranslation';
 import { toActionHistoryItem } from '../../utils/actionDisplay';
 import { CoupleOfferStatus } from '../../types/database';
 
 type FilterKey = 'all' | 'mine' | 'partner' | 'penalty';
 
-const AGREEMENT_STATUS_KEY: Record<CoupleOfferStatus, TranslationKey> = {
-  pending: 'coupleOffers.statusPending',
-  accepted: 'coupleOffers.statusAccepted',
-  declined: 'coupleOffers.statusDeclined',
-  completed: 'coupleOffers.statusCompleted',
-  failed: 'coupleOffers.statusFailed',
-  cancel_pending: 'coupleOffers.statusCancelPending',
-  cancelled: 'coupleOffers.statusCancelled',
-};
 
 type Props = NativeStackScreenProps<RootStackParamList, 'History'>;
 
@@ -39,7 +29,6 @@ export const HistoryScreen = ({ navigation }: Props) => {
   const loading = useMockLoading();
   const { userName, selectedAvatar } = useAppStore();
   const sync = useCoupleSync();
-  const offers = useCoupleOffers();
   const [filter, setFilter] = useState<FilterKey>('all');
 
   const filters = [
@@ -101,29 +90,6 @@ export const HistoryScreen = ({ navigation }: Props) => {
         ListEmptyComponent={
           <EmptyState icon="history" title={t('history.emptyTitle')} description={t('history.emptyDescription')} />
         }
-        ListFooterComponent={
-          offers.offers.length === 0 ? undefined : (
-            <View style={styles.agreementsSection}>
-              <Text style={[styles.agreementsTitle, { color: colors.text }]}>{t('history.agreementsTitle')}</Text>
-              {offers.offers.map((o) => (
-                <View key={o.id} style={[styles.agreementRow, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <Text style={[styles.agreementTitle, { color: colors.text }]} numberOfLines={1}>
-                    {o.title}
-                  </Text>
-                  <View style={styles.agreementMetaRow}>
-                    <Text style={[styles.agreementPoints, { color: colors.primary }]}>{o.price_points}</Text>
-                    <Text style={[styles.agreementStatus, { color: colors.textSecondary }]}>{t(AGREEMENT_STATUS_KEY[o.status])}</Text>
-                  </View>
-                  {!!o.deadline && (
-                    <Text style={[styles.agreementDeadline, { color: colors.textSecondary }]}>
-                      {t('coupleOffers.deadlineIs', { date: new Date(o.deadline).toLocaleDateString() })}
-                    </Text>
-                  )}
-                </View>
-              ))}
-            </View>
-          )
-        }
       />
     </ScreenContainer></ScreenBackground>
   );
@@ -132,40 +98,5 @@ export const HistoryScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   list: {
     paddingBottom: spacing.xl,
-  },
-  agreementsSection: {
-    marginTop: spacing.lg,
-  },
-  agreementsTitle: {
-    fontSize: fontSize.md,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-  },
-  agreementRow: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  agreementTitle: {
-    fontSize: fontSize.sm,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  agreementMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  agreementPoints: {
-    fontSize: fontSize.sm,
-    fontWeight: '800',
-  },
-  agreementStatus: {
-    fontSize: fontSize.xs,
-  },
-  agreementDeadline: {
-    fontSize: fontSize.xs,
-    marginTop: 2,
   },
 });

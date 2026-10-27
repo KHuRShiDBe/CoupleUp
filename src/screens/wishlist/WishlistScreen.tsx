@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
@@ -18,12 +18,14 @@ import { useCoupleSync } from '../../store/CoupleSyncContext';
 import { useBond } from '../../store/BondContext';
 import { useTranslation } from '../../localization/useTranslation';
 import { formatBond, formatUsd } from '../../utils/bond';
-import { WishlistPriority } from '../../types';
+import { ConfirmationModal } from '../../components/common/ConfirmationModal';
+import { DbWishlistItem } from '../../types/database';
 import { haptics } from '../../utils/haptics';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Wishlist'>;
 
-const PRIORITIES: WishlistPriority[] = ['low', 'medium', 'high'];
+// Deadline options (migration 0048), counted from the wish's created_at.
+const DEADLINES: (1 | 24 | null)[] = [1, 24, null];
 
 export const WishlistScreen = ({ navigation, route }: Props) => {
   const { colors } = useTheme();
@@ -63,13 +65,38 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
 
   const [title, setTitle] = useState('');
   const [priceUsd, setPriceUsd] = useState('');
-  const [priority, setPriority] = useState<WishlistPriority>('medium');
+  const [deadline, setDeadline] = useState<1 | 24 | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [importantTarget, setImportantTarget] = useState<DbWishlistItem | null>(null);
 
-  const priorityColor = (p: WishlistPriority) =>
-    p === 'high' ? colors.danger : p === 'medium' ? colors.primary : colors.textSecondary;
-  const priorityLabel = (p: WishlistPriority) =>
-    p === 'high' ? t('wishlist.priorityHigh') : p === 'medium' ? t('wishlist.priorityMedium') : t('wishlist.priorityLow');
+  // Re-render every 30 s so "Просрочено" appears without leaving the screen.
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const deadlineLabel = (h: 1 | 24 | null) =>
+    h === 1 ? t('wishlist.deadline1h') : h === 24 ? t('wishlist.deadline1d') : t('wishlist.deadlineNone');
+  const deadlineInfo = (item: DbWishlistItem) => {
+    const hours = item.deadline_hours ?? null;
+    if (hours == null) return { text: t('wishlist.deadlineNone'), overdue: false };
+    const due = new Date(item.created_at).getTime() + hours * 3600 * 1000;
+    const overdue = item.status !== 'done' && now > due;
+    const time = new Date(due).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return {
+      text: overdue ? t('wishlist.overdue') : `${deadlineLabel(hours === 1 ? 1 : 24)} · ${t('wishlist.deadlineUntil', { time })}`,
+      overdue,
+    };
+  };
+
+  // 🚨 Make important (1 BOND, server-side); errors show in the wishlist banner.
+  const confirmImportant = async () => {
+    const item = importantTarget;
+    setImportantTarget(null);
+    if (!item) return;
+    if (await wishlist.makeImportant(item.id)) haptics.success();
+  };
 
   const handleAdd = async () => {
     const price = parseFloat(priceUsd.replace(',', '.'));
@@ -78,11 +105,11 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
     setSubmitting(true);
     try {
       // Keep what the user typed if saving failed.
-      const saved = await wishlist.addItem({ title: title.trim(), priceUsd: price, priority });
+      const saved = await wishlist.addItem({ title: title.trim(), priceUsd: price, deadlineHours: deadline });
       if (saved) {
         setTitle('');
         setPriceUsd('');
-        setPriority('medium');
+        setDeadline(null);
       }
     } finally {
       setSubmitting(false);
@@ -124,20 +151,20 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
               style={[styles.input, { borderColor: colors.border, color: colors.text, backgroundColor: colors.background }]}
             />
             <View style={styles.priorityRow}>
-              {PRIORITIES.map((p) => (
+              {DEADLINES.map((h) => (
                 <Pressable
-                  key={p}
-                  onPress={() => setPriority(p)}
+                  key={String(h)}
+                  onPress={() => setDeadline(h)}
                   style={[
                     styles.priorityChip,
                     {
-                      borderColor: priority === p ? priorityColor(p) : colors.border,
-                      backgroundColor: priority === p ? colors.background : colors.card,
-                      borderWidth: priority === p ? 2 : 1,
+                      borderColor: deadline === h ? colors.primary : colors.border,
+                      backgroundColor: deadline === h ? colors.background : colors.card,
+                      borderWidth: deadline === h ? 2 : 1,
                     },
                   ]}
                 >
-                  <Text style={[styles.priorityChipText, { color: priorityColor(p) }]}>{priorityLabel(p)}</Text>
+                  <Text style={[styles.priorityChipText, { color: colors.primary }]}>{deadlineLabel(h)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -159,6 +186,7 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
             const isMine = item.created_by === myId;
             const isPending = item.status === 'pending';
             const busy = busyId === item.id;
+            const dl = deadlineInfo(item);
             const priceUsdValue = item.price_usd ?? 0;
             const points = bond.toPoints(priceUsdValue);
             return (
@@ -170,8 +198,8 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
                   <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
                     {item.title}
                   </Text>
-                  <View style={[styles.priorityBadge, { backgroundColor: priorityColor(item.priority) }]}>
-                    <Text style={styles.priorityBadgeText}>{priorityLabel(item.priority)}</Text>
+                  <View style={[styles.priorityBadge, { backgroundColor: dl.overdue ? colors.danger : colors.primary }]}>
+                    <Text style={styles.priorityBadgeText}>{dl.text}</Text>
                   </View>
                 </View>
                 {item.price_usd != null && (
@@ -217,6 +245,19 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
                     style={styles.markDoneButton}
                   />
                 )}
+                {item.is_important && (
+                  <Text style={[styles.statusText, { color: colors.danger }]}>{t('wishlist.importantBadge')}</Text>
+                )}
+                {!isPending && isMine && !item.is_important && (
+                  <PrimaryButton
+                    label={t('wishlist.importantButton')}
+                    variant="outline"
+                    onPress={() => setImportantTarget(item)}
+                    disabled={!hasCouple}
+                    colorOverride={{ primary: colors.danger, textOnPrimary: colors.textOnPrimary }}
+                    style={styles.markDoneButton}
+                  />
+                )}
                 {!isPending && isMine && (
                   <Pressable onPress={() => wishlist.removeItem(item.id)} style={styles.removeButton}>
                     <Text style={[styles.removeButtonText, { color: colors.danger }]}>{t('wishlist.remove')}</Text>
@@ -252,6 +293,15 @@ export const WishlistScreen = ({ navigation, route }: Props) => {
           </>
         )}
       </ScrollView>
+
+      <ConfirmationModal
+        visible={!!importantTarget}
+        title={t('wishlist.importantConfirmTitle')}
+        message={t('wishlist.importantConfirmMessage')}
+        confirmLabel={t('wishlist.importantConfirm')}
+        onConfirm={confirmImportant}
+        onCancel={() => setImportantTarget(null)}
+      />
     </ScreenContainer></ScreenBackground>
   );
 };

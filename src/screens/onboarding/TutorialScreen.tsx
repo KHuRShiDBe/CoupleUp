@@ -24,17 +24,15 @@ type Slide = {
 // use the app logo instead, handled separately below.
 const SLIDE_ICON: Partial<Record<number, IconName>> = {
   1: 'periodDaily',
-  3: 'add',
-  4: 'notification',
-  5: 'roulette',
-  6: 'savings',
+  3: 'notification',
+  4: 'roulette',
+  5: 'savings',
 };
 
 const SLIDES: Slide[] = [
   { titleKey: 'tutorial.slide1Title', bodyKey: 'tutorial.slide1Body' },
   { titleKey: 'tutorial.slide2Title', bodyKey: 'tutorial.slide2Body' },
   { titleKey: 'tutorial.slide3Title', bodyKey: 'tutorial.slide3Body' },
-  { titleKey: 'tutorial.slide4Title', bodyKey: 'tutorial.slide4Body' },
   { titleKey: 'tutorial.slide5Title', bodyKey: 'tutorial.slide5Body' },
   { titleKey: 'tutorial.slide6Title', bodyKey: 'tutorial.slide6Body' },
   { titleKey: 'tutorial.slideBondTitle', bodyKey: 'tutorial.slideBondBody' },

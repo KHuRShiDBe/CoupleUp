@@ -458,7 +458,8 @@ export type DbNotificationType =
   | 'action_response'
   | 'wish_completion_request'
   | 'wish_completion_response'
-  | 'prize_use_request';
+  | 'prize_use_request'
+  | 'wish_important';
 
 export interface DbNotification {
   id: string;
@@ -510,6 +511,14 @@ export interface DbWishlistItem {
   completion_requested_by?: string | null;
   completion_requested_at?: string | null;
   completed_at?: string | null;
+  // Migration 0048: 1 (one hour), 24 (one day) or null (no deadline),
+  // counted from created_at.
+  deadline_hours?: number | null;
+  // Migration 0048: "🚨 important" (1 BOND). important_seen_at = the
+  // partner pressed OK on the important-wish window (read, not done).
+  is_important?: boolean;
+  important_at?: string | null;
+  important_seen_at?: string | null;
 }
 
 export type DbWishlistStatus = 'active' | 'pending' | 'done';

@@ -153,7 +153,7 @@ export const WishRouletteScreen = ({ navigation }: Props) => {
 
   const costPoints = Math.round(bond.toPoints(WISH_ROULETTE_SPIN_COST_BOND));
   const canAffordNow = sync.myStats.balance >= costPoints;
-  const canAffordAgain = false; // 48 h cooldown: a second spin right after a result is never allowed
+  const canAffordAgain = false; // 12 h cooldown: a second spin right after a result is never allowed
 
   const handleSpin = async () => {
     if (spinning || !canAffordNow || onCooldown) return;

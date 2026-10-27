@@ -1,7 +1,6 @@
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import { ServiceError } from './errors';
 import { DbWishlistItem } from '../../types/database';
-import { WishlistPriority } from '../../types';
 
 export const listWishlistItems = async (coupleId: string): Promise<DbWishlistItem[]> => {
   if (!isSupabaseConfigured) return [];
@@ -19,7 +18,8 @@ export const addWishlistItem = async (input: {
   createdBy: string;
   title: string;
   priceUsd?: number;
-  priority: WishlistPriority;
+  // 1 = one hour, 24 = one day, null = no deadline (migration 0048).
+  deadlineHours: number | null;
 }): Promise<DbWishlistItem> => {
   if (!isSupabaseConfigured) throw new ServiceError('Backend не настроен', 'NOT_CONFIGURED');
   const { data, error } = await supabase
@@ -29,7 +29,8 @@ export const addWishlistItem = async (input: {
       created_by: input.createdBy,
       title: input.title,
       price_usd: input.priceUsd,
-      priority: input.priority,
+      // priority column keeps its DB default; the app uses deadlines now.
+      ...(input.deadlineHours != null ? { deadline_hours: input.deadlineHours } : {}),
     })
     .select()
     .single();
@@ -58,4 +59,20 @@ export const respondWishCompletion = async (id: string, approve: boolean): Promi
   const { data, error } = await supabase.rpc('respond_wish_completion', { p_item_id: id, p_approve: approve });
   if (error) throw new ServiceError(error.message);
   return data as DbWishlistItem;
+};
+
+// Migration 0048: the author marks their own active wish as important for
+// 1 BOND (debited once by the server; anti-abuse limits enforced there).
+export const makeWishImportant = async (id: string): Promise<DbWishlistItem> => {
+  if (!isSupabaseConfigured) throw new ServiceError('Backend не настроен', 'NOT_CONFIGURED');
+  const { data, error } = await supabase.rpc('make_wish_important', { p_item_id: id });
+  if (error) throw new ServiceError(error.message);
+  return data as DbWishlistItem;
+};
+
+// Partner pressed OK on the important-wish window (read receipt only).
+export const acknowledgeWishImportant = async (id: string): Promise<void> => {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.rpc('acknowledge_wish_important', { p_item_id: id });
+  if (error) throw new ServiceError(error.message);
 };

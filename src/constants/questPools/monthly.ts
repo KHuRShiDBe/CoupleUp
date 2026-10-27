@@ -1,42 +1,30 @@
 import { QuestPoolItem } from './types';
 
-// 15 items each, 5 easy + 5 medium + 5 hard (see questEconomy.ts).
+// 10 items per role, written to the PERSON WHO DOES THEM (male pool = his
+// tasks for her, female pool = her tasks for him): 3 easy + 3 medium +
+// 3 hard + 1 very hard, matched tier for tier in effort.
 export const MALE_MONTHLY_POOL: QuestPoolItem[] = [
-  { id: 'mm_photo_walk', difficulty: 'easy', titleKey: 'mm_photo_walk' },
-  { id: 'mm_movie_night', difficulty: 'easy', titleKey: 'mm_movie_night' },
-  { id: 'mm_message_of_month', difficulty: 'easy', titleKey: 'mm_message_of_month' },
-  { id: 'mm_small_thanks', difficulty: 'easy', titleKey: 'mm_small_thanks' },
-  { id: 'mm_joint_hobby', difficulty: 'easy', titleKey: 'mm_joint_hobby' },
-
-  { id: 'mm_full_date', difficulty: 'medium', titleKey: 'mm_full_date' },
-  { id: 'mm_cook_together', difficulty: 'medium', titleKey: 'mm_cook_together' },
-  { id: 'mm_unusual_evening', difficulty: 'medium', titleKey: 'mm_unusual_evening' },
-  { id: 'mm_fulfil_promise', difficulty: 'medium', titleKey: 'mm_fulfil_promise' },
-  { id: 'mm_small_project', difficulty: 'medium', titleKey: 'mm_small_project' },
-
-  { id: 'mm_gift', difficulty: 'hard', titleKey: 'mm_gift' },
-  { id: 'mm_fulfil_her_wish', difficulty: 'hard', titleKey: 'mm_fulfil_her_wish' },
-  { id: 'mm_day_trip', difficulty: 'hard', titleKey: 'mm_day_trip' },
-  { id: 'mm_home_upgrade', difficulty: 'hard', titleKey: 'mm_home_upgrade' },
-  { id: 'mm_celebrate_progress', difficulty: 'hard', titleKey: 'mm_celebrate_progress' },
+  { id: 'mm_letter', difficulty: 'easy', titleKey: 'mm_letter' },
+  { id: 'mm_flowers', difficulty: 'easy', titleKey: 'mm_flowers' },
+  { id: 'mm_memory', difficulty: 'easy', titleKey: 'mm_memory' },
+  { id: 'mm_cafe', difficulty: 'medium', titleKey: 'mm_cafe' },
+  { id: 'mm_album', difficulty: 'medium', titleKey: 'mm_album' },
+  { id: 'mm_skill', difficulty: 'medium', titleKey: 'mm_skill' },
+  { id: 'mm_day_off', difficulty: 'hard', titleKey: 'mm_day_off' },
+  { id: 'mm_fix', difficulty: 'hard', titleKey: 'mm_fix' },
+  { id: 'mm_thoughtful_gift', difficulty: 'hard', titleKey: 'mm_thoughtful_gift' },
+  { id: 'mm_trip', difficulty: 'veryHard', titleKey: 'mm_trip' },
 ];
 
 export const FEMALE_MONTHLY_POOL: QuestPoolItem[] = [
-  { id: 'fm_photo_walk', difficulty: 'easy', titleKey: 'fm_photo_walk' },
-  { id: 'fm_movie_night', difficulty: 'easy', titleKey: 'fm_movie_night' },
-  { id: 'fm_message_of_month', difficulty: 'easy', titleKey: 'fm_message_of_month' },
-  { id: 'fm_small_thanks', difficulty: 'easy', titleKey: 'fm_small_thanks' },
-  { id: 'fm_new_recipe', difficulty: 'easy', titleKey: 'fm_new_recipe' },
-
-  { id: 'fm_full_date', difficulty: 'medium', titleKey: 'fm_full_date' },
-  { id: 'fm_joint_activity', difficulty: 'medium', titleKey: 'fm_joint_activity' },
-  { id: 'fm_unusual_evening', difficulty: 'medium', titleKey: 'fm_unusual_evening' },
-  { id: 'fm_fulfil_promise', difficulty: 'medium', titleKey: 'fm_fulfil_promise' },
-  { id: 'fm_small_project', difficulty: 'medium', titleKey: 'fm_small_project' },
-
-  { id: 'fm_gift', difficulty: 'hard', titleKey: 'fm_gift' },
-  { id: 'fm_fulfil_his_wish', difficulty: 'hard', titleKey: 'fm_fulfil_his_wish' },
-  { id: 'fm_day_trip', difficulty: 'hard', titleKey: 'fm_day_trip' },
-  { id: 'fm_cozy_upgrade', difficulty: 'hard', titleKey: 'fm_cozy_upgrade' },
-  { id: 'fm_celebrate_progress', difficulty: 'hard', titleKey: 'fm_celebrate_progress' },
+  { id: 'mf_letter', difficulty: 'easy', titleKey: 'mf_letter' },
+  { id: 'mf_treat', difficulty: 'easy', titleKey: 'mf_treat' },
+  { id: 'mf_plans', difficulty: 'easy', titleKey: 'mf_plans' },
+  { id: 'mf_cafe', difficulty: 'medium', titleKey: 'mf_cafe' },
+  { id: 'mf_video', difficulty: 'medium', titleKey: 'mf_video' },
+  { id: 'mf_hobby', difficulty: 'medium', titleKey: 'mf_hobby' },
+  { id: 'mf_day_off', difficulty: 'hard', titleKey: 'mf_day_off' },
+  { id: 'mf_feast', difficulty: 'hard', titleKey: 'mf_feast' },
+  { id: 'mf_gift', difficulty: 'hard', titleKey: 'mf_gift' },
+  { id: 'mf_adventure', difficulty: 'veryHard', titleKey: 'mf_adventure' },
 ];

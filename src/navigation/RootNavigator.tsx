@@ -5,7 +5,6 @@ import { RootStackParamList } from './types';
 import { navigationRef } from './navigationRef';
 import { MainTabNavigator } from './MainTabNavigator';
 import { HistoryScreen } from '../screens/history/HistoryScreen';
-import { AddActionScreen } from '../screens/actions/AddActionScreen';
 import { NotificationsScreen } from '../screens/notifications/NotificationsScreen';
 import { SplashScreen } from '../screens/onboarding/SplashScreen';
 import { LanguageSelectScreen } from '../screens/onboarding/LanguageSelectScreen';
@@ -186,7 +185,6 @@ export const RootNavigator = () => {
         />
         <Stack.Screen name="Finance" component={FinanceScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="History" component={HistoryScreen} options={{ presentation: 'card' }} />
-        <Stack.Screen name="Add" component={AddActionScreen} options={{ presentation: 'card' }} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ presentation: 'card' }} />
         {__DEV__ && (
           <Stack.Screen name="NotificationTest" component={NotificationTestScreen} options={{ presentation: 'card' }} />

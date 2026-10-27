@@ -8,8 +8,8 @@
 // full daily list + its bonuses is worth 4 BOND, leaving room for
 // weekly/monthly items on the same day.
 //
-// Daily: 10 items per partner -- 3 easy + 3 medium + 3 hard + 1 very hard.
-// Weekly/monthly/yearly keep 5 easy + 5 medium + 5 hard.
+// Every period: 10 items per partner -- 3 easy + 3 medium + 3 hard + 1 very
+// hard. Each person gets the pool of their OWN role, worded to the doer.
 
 import { QuestPeriod } from '../types/database';
 
@@ -19,28 +19,28 @@ export const QUEST_DIFFICULTIES: QuestDifficulty[] = ['easy', 'medium', 'hard', 
 
 export const QUEST_TIER_COUNTS: Record<QuestPeriod, Record<QuestDifficulty, number>> = {
   daily: { easy: 3, medium: 3, hard: 3, veryHard: 1 },
-  weekly: { easy: 5, medium: 5, hard: 5, veryHard: 0 },
-  monthly: { easy: 5, medium: 5, hard: 5, veryHard: 0 },
-  yearly: { easy: 5, medium: 5, hard: 5, veryHard: 0 },
+  weekly: { easy: 3, medium: 3, hard: 3, veryHard: 1 },
+  monthly: { easy: 3, medium: 3, hard: 3, veryHard: 1 },
+  yearly: { easy: 3, medium: 3, hard: 3, veryHard: 1 },
 };
 
 export const questItemsPerPeriod = (period: QuestPeriod): number =>
   QUEST_DIFFICULTIES.reduce((sum, tier) => sum + QUEST_TIER_COUNTS[period][tier], 0);
 
-// Points per item. Daily: 3x15 + 3x25 + 3x40 + 1x60 = 300 points (3 BOND).
-// No single item exceeds the 500-point daily cap. veryHard is only used by
-// the daily pool; the other periods' values exist for type completeness.
+// Points per item (100 points = 1 BOND). Full lists: daily 300 (3 BOND),
+// weekly 600, monthly 1180, yearly 2900. No single item exceeds the
+// 500-point (5 BOND) daily cap, which still clamps any one day's total.
 export const QUEST_BASE_POINTS: Record<QuestPeriod, Record<QuestDifficulty, number>> = {
   daily: { easy: 15, medium: 25, hard: 40, veryHard: 60 },
-  weekly: { easy: 20, medium: 40, hard: 60, veryHard: 80 },
-  monthly: { easy: 50, medium: 100, hard: 150, veryHard: 200 },
-  yearly: { easy: 200, medium: 350, hard: 500, veryHard: 500 },
+  weekly: { easy: 30, medium: 50, hard: 80, veryHard: 120 },
+  monthly: { easy: 60, medium: 100, hard: 150, veryHard: 250 },
+  yearly: { easy: 150, medium: 250, hard: 400, veryHard: 500 },
 };
 
 // Milestone bonuses -- daily AND weekly only. Cumulative, each paid at most
 // once per (user, period, period_key), immediately (no extra approval: the
 // counted items were already confirmed by the partner). Must match
-// claim_quest_bonus (migration 0047). Daily: 20 + 30 + 50 = 100 points.
+// claim_quest_bonus (migration 0048). 20 + 30 + 50 = 100 points per period.
 export const QUEST_BONUS_MILESTONES_BY_PERIOD: Partial<Record<QuestPeriod, { count: number; points: number }[]>> = {
   daily: [
     { count: 5, points: 20 },
@@ -50,14 +50,14 @@ export const QUEST_BONUS_MILESTONES_BY_PERIOD: Partial<Record<QuestPeriod, { cou
   weekly: [
     { count: 5, points: 20 },
     { count: 7, points: 30 },
-    { count: 15, points: 50 },
+    { count: 10, points: 50 },
   ],
 };
 
 export const QUEST_BONUS_PERIODS: QuestPeriod[] = ['daily', 'weekly'];
 
 // Free quests per period == the system-generated count for that period
-// (10 daily, 15 otherwise). The next user-added custom item is the first
+// (10 everywhere). The next user-added custom item is the first
 // "extra" one.
 export const QUEST_FREE_COUNT: Record<QuestPeriod, number> = {
   daily: questItemsPerPeriod('daily'),

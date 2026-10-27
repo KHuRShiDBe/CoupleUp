@@ -6,9 +6,8 @@ interface QuestProgressInput {
   period: QuestPeriod;
   periodKey: string;
   coupleId: string;
-  // The gender-themed pool this person's quests are drawn from -- NOT their
-  // own role, but their partner's (see questSelection.ts/getQuestsFor): a
-  // male person's quests are the FEMALE pool's items, and vice versa.
+  // The gender-themed pool this person's quests are drawn from -- their OWN
+  // role (items are worded to the doer).
   poolRole: Role;
   userId: string;
   progress: DbQuestProgress[];

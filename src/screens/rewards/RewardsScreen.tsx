@@ -62,14 +62,14 @@ export const RewardsScreen = () => {
 
   const coupleId = sync.couple?.id ?? null;
   const myId = auth.session?.user?.id;
-  const partnerRole = sync.partner?.role ?? (role === 'male' ? 'female' : 'male');
   const periodKey = getPeriodKey(period);
 
   const periodTabs = PERIOD_ORDER.map((p) => ({ key: p, label: t(`quests.tab${p.charAt(0).toUpperCase()}${p.slice(1)}` as TranslationKey) }));
 
   const allSystemQuests = useMemo(
-    () => (coupleId ? getQuestsFor(period, periodKey, coupleId, partnerRole) : []),
-    [coupleId, period, periodKey, partnerRole],
+    // Pool of MY OWN role: every item is worded to the person doing it.
+    () => (coupleId ? getQuestsFor(period, periodKey, coupleId, role) : []),
+    [coupleId, period, periodKey, role],
   );
 
   // Standard items I've replaced (see replaceStandardItem) stay hidden for

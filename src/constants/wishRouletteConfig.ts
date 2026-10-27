@@ -33,9 +33,10 @@ export interface WishRouletteItem {
   isCoupon?: boolean;
 }
 
-// Server-enforced in spin_wish_roulette + a 48 h per-user cooldown (migration 0047).
+// Server-enforced in spin_wish_roulette: 3 BOND (0047) and a 12 h per-user
+// cooldown counted from the last spin (migration 0048).
 export const WISH_ROULETTE_SPIN_COST_BOND = 3;
-export const WISH_ROULETTE_COOLDOWN_HOURS = 48;
+export const WISH_ROULETTE_COOLDOWN_HOURS = 12;
 
 export const RARITY_ORDER: WishRarity[] = ['cheap', 'almostBreakeven', 'x1', 'x3', 'x10'];
 

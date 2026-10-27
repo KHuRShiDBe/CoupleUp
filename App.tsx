@@ -15,7 +15,6 @@ import { WishlistProvider } from './src/store/WishlistContext';
 import { GamesProvider } from './src/store/GamesContext';
 import { DailyActionsProvider } from './src/store/DailyActionsContext';
 import { QuestsProvider } from './src/store/QuestsContext';
-import { CoupleOffersProvider } from './src/store/CoupleOffersContext';
 import { IntimateRouletteProvider } from './src/store/IntimateRouletteContext';
 import { ShopRouletteProvider } from './src/store/ShopRouletteContext';
 import { WishRouletteProvider } from './src/store/WishRouletteContext';
@@ -25,6 +24,7 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { InAppNotificationBanner } from './src/components/notifications/InAppNotificationBanner';
 import { AppErrorBoundary } from './src/components/common/AppErrorBoundary';
 import { PartnerPrizeUseModal } from './src/components/notifications/PartnerPrizeUseModal';
+import { ImportantWishModal } from './src/components/notifications/ImportantWishModal';
 
 const AppShell = () => {
   useProfileAutoSync();
@@ -38,6 +38,7 @@ const AppShell = () => {
         <RootNavigator key={navigatorKey} />
         <InAppNotificationBanner />
         <PartnerPrizeUseModal />
+        <ImportantWishModal />
       </AppErrorBoundary>
     </>
   );
@@ -60,17 +61,15 @@ export default function App() {
                             <GamesProvider>
                               <DailyActionsProvider>
                                 <QuestsProvider>
-                                  <CoupleOffersProvider>
-                                    <IntimateRouletteProvider>
-                                      <ShopRouletteProvider>
-                                        <WishRouletteProvider>
-                                          <ChatProvider>
-                                            <AppShell />
-                                          </ChatProvider>
-                                        </WishRouletteProvider>
-                                      </ShopRouletteProvider>
-                                    </IntimateRouletteProvider>
-                                  </CoupleOffersProvider>
+                                  <IntimateRouletteProvider>
+                                    <ShopRouletteProvider>
+                                      <WishRouletteProvider>
+                                        <ChatProvider>
+                                          <AppShell />
+                                        </ChatProvider>
+                                      </WishRouletteProvider>
+                                    </ShopRouletteProvider>
+                                  </IntimateRouletteProvider>
                                 </QuestsProvider>
                               </DailyActionsProvider>
                             </GamesProvider>

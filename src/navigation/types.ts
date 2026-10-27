@@ -100,7 +100,6 @@ export type RootStackParamList = {
   History: undefined;
   // Was a bottom tab ("Договоры") -- now reached from Home's own "Договоры"
   // card, as a regular pushed screen (see RootNavigator).
-  Add: undefined;
   // Was a bottom tab -- now reached from Home's own bell button (top-right
   // corner), as a regular pushed screen (see RootNavigator).
   Notifications: undefined;

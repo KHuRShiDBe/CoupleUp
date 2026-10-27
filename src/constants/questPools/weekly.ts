@@ -1,43 +1,30 @@
 import { QuestPoolItem } from './types';
 
-// 15 items each, 5 easy + 5 medium + 5 hard (see questEconomy.ts) -- the
-// full pool IS the week's list now, no rotation.
+// 10 items per role, written to the PERSON WHO DOES THEM (male pool = his
+// tasks for her, female pool = her tasks for him): 3 easy + 3 medium +
+// 3 hard + 1 very hard, matched tier for tier in effort.
 export const MALE_WEEKLY_POOL: QuestPoolItem[] = [
-  { id: 'mw_organize_walk', difficulty: 'easy', titleKey: 'mw_organize_walk' },
-  { id: 'mw_phone_free_evening', difficulty: 'easy', titleKey: 'mw_phone_free_evening' },
-  { id: 'mw_try_new', difficulty: 'easy', titleKey: 'mw_try_new' },
-  { id: 'mw_love_letter', difficulty: 'easy', titleKey: 'mw_love_letter' },
-  { id: 'mw_compliment_week', difficulty: 'easy', titleKey: 'mw_compliment_week' },
-
-  { id: 'mw_help_cleaning', difficulty: 'medium', titleKey: 'mw_help_cleaning' },
-  { id: 'mw_cook_or_order_dinner', difficulty: 'medium', titleKey: 'mw_cook_or_order_dinner' },
-  { id: 'mw_romantic_surprise', difficulty: 'medium', titleKey: 'mw_romantic_surprise' },
-  { id: 'mw_plan_weekend', difficulty: 'medium', titleKey: 'mw_plan_weekend' },
-  { id: 'mw_no_screens_morning', difficulty: 'medium', titleKey: 'mw_no_screens_morning' },
-
-  { id: 'mw_massage', difficulty: 'hard', titleKey: 'mw_massage' },
-  { id: 'mw_fulfill_wish', difficulty: 'hard', titleKey: 'mw_fulfill_wish' },
-  { id: 'mw_date_night', difficulty: 'hard', titleKey: 'mw_date_night' },
-  { id: 'mw_help_big_task', difficulty: 'hard', titleKey: 'mw_help_big_task' },
-  { id: 'mw_small_gift', difficulty: 'hard', titleKey: 'mw_small_gift' },
+  { id: 'wm_note', difficulty: 'easy', titleKey: 'wm_note' },
+  { id: 'wm_playlist', difficulty: 'easy', titleKey: 'wm_playlist' },
+  { id: 'wm_grateful', difficulty: 'easy', titleKey: 'wm_grateful' },
+  { id: 'wm_breakfast', difficulty: 'medium', titleKey: 'wm_breakfast' },
+  { id: 'wm_walk', difficulty: 'medium', titleKey: 'wm_walk' },
+  { id: 'wm_errand', difficulty: 'medium', titleKey: 'wm_errand' },
+  { id: 'wm_cleaning', difficulty: 'hard', titleKey: 'wm_cleaning' },
+  { id: 'wm_movie', difficulty: 'hard', titleKey: 'wm_movie' },
+  { id: 'wm_massage', difficulty: 'hard', titleKey: 'wm_massage' },
+  { id: 'wm_date', difficulty: 'veryHard', titleKey: 'wm_date' },
 ];
 
 export const FEMALE_WEEKLY_POOL: QuestPoolItem[] = [
-  { id: 'fw_organize_walk', difficulty: 'easy', titleKey: 'fw_organize_walk' },
-  { id: 'fw_propose_evening', difficulty: 'easy', titleKey: 'fw_propose_evening' },
-  { id: 'fw_try_new', difficulty: 'easy', titleKey: 'fw_try_new' },
-  { id: 'fw_love_note', difficulty: 'easy', titleKey: 'fw_love_note' },
-  { id: 'fw_compliment_week', difficulty: 'easy', titleKey: 'fw_compliment_week' },
-
-  { id: 'fw_help_delayed_task', difficulty: 'medium', titleKey: 'fw_help_delayed_task' },
-  { id: 'fw_cook_favorite_dish', difficulty: 'medium', titleKey: 'fw_cook_favorite_dish' },
-  { id: 'fw_cozy_evening', difficulty: 'medium', titleKey: 'fw_cozy_evening' },
-  { id: 'fw_plan_weekend', difficulty: 'medium', titleKey: 'fw_plan_weekend' },
-  { id: 'fw_no_screens_morning', difficulty: 'medium', titleKey: 'fw_no_screens_morning' },
-
-  { id: 'fw_head_body_massage', difficulty: 'hard', titleKey: 'fw_head_body_massage' },
-  { id: 'fw_fulfill_wish', difficulty: 'hard', titleKey: 'fw_fulfill_wish' },
-  { id: 'fw_date_night', difficulty: 'hard', titleKey: 'fw_date_night' },
-  { id: 'fw_help_big_task', difficulty: 'hard', titleKey: 'fw_help_big_task' },
-  { id: 'fw_small_gift', difficulty: 'hard', titleKey: 'fw_small_gift' },
+  { id: 'wf_voice', difficulty: 'easy', titleKey: 'wf_voice' },
+  { id: 'wf_grateful', difficulty: 'easy', titleKey: 'wf_grateful' },
+  { id: 'wf_photo', difficulty: 'easy', titleKey: 'wf_photo' },
+  { id: 'wf_lunch', difficulty: 'medium', titleKey: 'wf_lunch' },
+  { id: 'wf_game', difficulty: 'medium', titleKey: 'wf_game' },
+  { id: 'wf_errand', difficulty: 'medium', titleKey: 'wf_errand' },
+  { id: 'wf_dish', difficulty: 'hard', titleKey: 'wf_dish' },
+  { id: 'wf_spa', difficulty: 'hard', titleKey: 'wf_spa' },
+  { id: 'wf_surprise', difficulty: 'hard', titleKey: 'wf_surprise' },
+  { id: 'wf_date', difficulty: 'veryHard', titleKey: 'wf_date' },
 ];
