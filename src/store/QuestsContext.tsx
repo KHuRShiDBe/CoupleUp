@@ -25,7 +25,14 @@ interface QuestsValue {
     title: string,
     points: number,
   ) => Promise<{ status: 'sent' | 'duplicate' | 'error'; message?: string }>;
-  claimBonus: (period: QuestPeriod, periodKey: string, milestone: number, bonusPoints: number, title: string) => Promise<boolean>;
+  // `message` = the exact reason when the claim failed (shown at the pill).
+  claimBonus: (
+    period: QuestPeriod,
+    periodKey: string,
+    milestone: number,
+    bonusPoints: number,
+    title: string,
+  ) => Promise<{ ok: boolean; message?: string }>;
   addCustomItem: (period: QuestPeriod, periodKey: string, title: string, points: number) => Promise<boolean>;
   // Hides a standard item (for good, not just this period) and puts a
   // custom item of the SAME point value in its place -- the free slot it
@@ -124,15 +131,16 @@ export const QuestsProvider = ({ children }: { children: React.ReactNode }) => {
         }
       },
       claimBonus: async (period, periodKey, milestone, bonusPoints, title) => {
-        if (!coupleId) return false;
+        if (!coupleId) return { ok: false, message: 'NO_COUPLE' };
         setError(null);
         try {
           const ok = await questsService.claimQuestBonus({ coupleId, period, periodKey, milestone, bonusPoints, title });
-          if (ok) await refresh();
-          return ok;
+          await refresh();
+          return { ok };
         } catch (e) {
-          setError(friendlyMessage(toServiceError(e)));
-          return false;
+          const err = toServiceError(e);
+          const friendly = friendlyMessage(err);
+          return { ok: false, message: friendly === err.message ? friendly : `${friendly} (${err.message})` };
         }
       },
       addCustomItem: async (period, periodKey, title, points) => {

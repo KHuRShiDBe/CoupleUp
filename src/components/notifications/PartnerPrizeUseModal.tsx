@@ -8,6 +8,7 @@ import { useCoupleSync } from '../../store/CoupleSyncContext';
 import { useTranslation } from '../../localization/useTranslation';
 import { listCoupleInventory, respondInventoryUse } from '../../services/supabase/savingsService';
 import { subscribeToCoupleInventory } from '../../services/supabase/realtime';
+import { friendlyMessage, toServiceError } from '../../services/supabase/errors';
 import { DbWishInventoryItem } from '../../types/database';
 import { resolveItemTitle } from '../../utils/inventory';
 import { haptics } from '../../utils/haptics';
@@ -28,6 +29,7 @@ export const PartnerPrizeUseModal = () => {
 
   const [queue, setQueue] = useState<DbWishInventoryItem[]>([]);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!auth.configured || !coupleId || !userId) {
@@ -37,8 +39,9 @@ export const PartnerPrizeUseModal = () => {
     try {
       const rows = await listCoupleInventory(coupleId);
       setQueue(rows.filter((r) => r.owner_id !== userId && r.status === 'pending_use'));
-    } catch {
-      // Silent: the Winnings screen still lists these and shows errors.
+    } catch (e) {
+      // Only visible while the window is open; the queue is kept as is.
+      setError(friendlyMessage(toServiceError(e)));
     }
   }, [auth.configured, coupleId, userId]);
 
@@ -61,16 +64,21 @@ export const PartnerPrizeUseModal = () => {
   }, [refresh]);
 
   const current = queue[0];
+  const currentId = current?.id;
+  useEffect(() => {
+    setError(null);
+  }, [currentId]);
 
   const handleOk = async () => {
     if (!current || busy) return;
     setBusy(true);
     haptics.confirm();
+    setError(null);
     try {
       await respondInventoryUse(current.id, true);
-    } catch {
-      // Already handled elsewhere (e.g. confirmed on the Winnings screen) --
-      // the refresh below drops it from the queue either way.
+    } catch (e) {
+      // Shown in the window -- it stays open so OK can be retried.
+      setError(friendlyMessage(toServiceError(e)));
     } finally {
       await refresh();
       setBusy(false);
@@ -87,6 +95,7 @@ export const PartnerPrizeUseModal = () => {
           {!!current && (
             <Text style={[styles.prize, { color: colors.text }]}>{resolveItemTitle(current.item_key, t)}</Text>
           )}
+          {!!error && <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>}
           <PrimaryButton label={t('winnings.partnerUsedOk')} onPress={handleOk} loading={busy} style={styles.button} />
         </View>
       </View>
@@ -130,6 +139,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.xs,
     marginBottom: spacing.lg,
+  },
+  error: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   button: {
     width: '100%',

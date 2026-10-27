@@ -147,6 +147,12 @@ export const RewardsScreen = () => {
     systemQuests.filter((item) => isCompleted(item.id)).length +
     replacementCustomItems.filter((c) => isCompleted(c.item_key)).length;
   const progressRatio = questTotal > 0 ? doneCount / questTotal : 0;
+  // Milestones use the SAME count as claim_quest_bonus (0051): every
+  // partner-approved item of this period completed by me (custom extras
+  // included), not items of my list completed by anyone.
+  const myApprovedCount = quests.progress.filter(
+    (p) => p.period === period && p.period_key === periodKey && !!myId && p.completed_by === myId,
+  ).length;
 
   const progressAnim = useRef(new Animated.Value(progressRatio)).current;
 
@@ -189,9 +195,27 @@ export const RewardsScreen = () => {
     }
   };
 
+  // Shown right under the milestone row, not in the top banner.
+  const [bonusError, setBonusError] = useState<string | null>(null);
+  const [claimingMilestone, setClaimingMilestone] = useState<number | null>(null);
   const handleClaimMilestone = async (count: number, points: number) => {
+    if (claimingMilestone !== null) return;
     haptics.confirm();
-    await quests.claimBonus(period, periodKey, count, points, t('quests.progressLabel', { done: count, total: questTotal }));
+    setBonusError(null);
+    setClaimingMilestone(count);
+    try {
+      const { ok, message } = await quests.claimBonus(
+        period,
+        periodKey,
+        count,
+        points,
+        t('quests.progressLabel', { done: count, total: questTotal }),
+      );
+      if (ok) haptics.success();
+      else setBonusError(message ?? t('quests.alreadySubmitted'));
+    } finally {
+      setClaimingMilestone(null);
+    }
   };
 
   const customQuestPrice = nextCustomQuestPrice(period, questTotal, extraCustomItems.length);
@@ -253,7 +277,14 @@ export const RewardsScreen = () => {
         <Text style={[styles.balanceValue, { color: colors.textOnPrimary }]}>{sync.myStats.balance}</Text>
       </View>
 
-      <FilterTabs options={periodTabs} value={period} onChange={(key) => setPeriod(key as QuestPeriod)} />
+      <FilterTabs
+        options={periodTabs}
+        value={period}
+        onChange={(key) => {
+          setBonusError(null);
+          setPeriod(key as QuestPeriod);
+        }}
+      />
 
       {/* Same live progress bar in all four periods now (spec item 4) --
           real doneCount/questTotal from Supabase, not a separate counter. */}
@@ -276,11 +307,11 @@ export const RewardsScreen = () => {
               (b) => b.user_id === auth.session?.user?.id && b.period === period && b.period_key === periodKey && b.milestone === m.count,
             );
             const pending = !claimed && isBonusPending(m.count);
-            const reached = doneCount >= m.count;
+            const reached = myApprovedCount >= m.count;
             return (
               <Pressable
                 key={m.count}
-                disabled={!reached || claimed || pending}
+                disabled={!reached || claimed || pending || claimingMilestone !== null}
                 onPress={() => handleClaimMilestone(m.count, m.points)}
                 style={[
                   styles.milestonePill,
@@ -303,6 +334,7 @@ export const RewardsScreen = () => {
           })}
         </View>
       )}
+      {!!bonusError && <Text style={[styles.bonusError, { color: colors.danger }]}>{bonusError}</Text>}
 
       {displayQuests.map((item) => (
         <View key={item.key} style={[styles.questCard, shadow.soft, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -450,6 +482,12 @@ const styles = StyleSheet.create({
   milestoneText: {
     fontSize: fontSize.sm,
     fontWeight: '800',
+  },
+  bonusError: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
   },
   milestoneSub: {
     fontSize: 10,
